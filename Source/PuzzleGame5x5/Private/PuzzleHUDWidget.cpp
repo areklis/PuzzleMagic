@@ -16,6 +16,8 @@
 #include "Components/Overlay.h"
 #include "Components/OverlaySlot.h"
 #include "Components/ScaleBox.h"
+#include "Components/Slider.h"
+#include "Brushes/SlateRoundedBoxBrush.h"
 #include "Components/SizeBox.h"
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
@@ -25,6 +27,7 @@
 #include "Materials/MaterialInterface.h"
 #include "Misc/Paths.h"
 #include "GameFramework/PlayerController.h"
+#include "Kismet/GameplayStatics.h"
 
 namespace UIStyle
 {
@@ -623,7 +626,43 @@ void UPuzzleHUDWidget::BuildCardContent(EPuzzleCard Card)
 		Add(MakeText(TEXT("combos, relics and luck"), false, 28.f, Lavender, 3.f), 6.f);
 		Add(Btn(FString::Printf(TEXT("BONUS TILES  %s"), bBonus ? TEXT("ON") : TEXT("OFF")), FVector2D(620.f, 120.f), bBonus ? Emerald : Ruby, bBonus ? Emerald2 : Ruby2, ActToggleBonus), 30.f);
 		Add(MakeText(TEXT("special tiles worth extra points"), false, 28.f, Lavender, 3.f), 6.f);
-		Add(Btn(TEXT("BACK"), FVector2D(380.f, 110.f), Amethyst, Amethyst2, ActMenu), 44.f);
+		auto VolumeSlider = [this](float Value, bool bMusic) -> UWidget*
+		{
+			USlider* Slider = WidgetTree->ConstructWidget<USlider>();
+			Slider->SetValue(Value);
+			Slider->SetStepSize(0.01f);
+			// A fat bar and a big gold knob: easy to grab with a thumb.
+			const FSlateRoundedBoxBrush Bar(FLinearColor(0.34f, 0.2f, 0.62f), 10.f, FVector2f(64.f, 20.f));
+			const FSlateRoundedBoxBrush BarLit(FLinearColor(0.45f, 0.28f, 0.78f), 10.f, FVector2f(64.f, 20.f));
+			const FSlateRoundedBoxBrush Knob(Gold, 23.f, FVector2f(46.f, 46.f));
+			const FSlateRoundedBoxBrush KnobLit(PaleGold, 25.f, FVector2f(50.f, 50.f));
+			Slider->SetSliderBarColor(FLinearColor::White);
+			Slider->SetSliderHandleColor(FLinearColor::White);
+			FSliderStyle Style = Slider->GetWidgetStyle();
+			Style.SetBarThickness(20.f);
+			Style.SetNormalBarImage(Bar);
+			Style.SetHoveredBarImage(BarLit);
+			Style.SetDisabledBarImage(Bar);
+			Style.SetNormalThumbImage(Knob);
+			Style.SetHoveredThumbImage(KnobLit);
+			Style.SetDisabledThumbImage(Knob);
+			Slider->SetWidgetStyle(Style);
+			if (bMusic)
+			{
+				Slider->OnValueChanged.AddDynamic(this, &UPuzzleHUDWidget::OnMusicVolumeChanged);
+			}
+			else
+			{
+				Slider->OnValueChanged.AddDynamic(this, &UPuzzleHUDWidget::OnSfxVolumeChanged);
+				Slider->OnMouseCaptureEnd.AddDynamic(this, &UPuzzleHUDWidget::OnSfxVolumeReleased);
+			}
+			return Sized(Slider, FVector2D(520.f, 64.f));
+		};
+		Add(MakeText(TEXT("MUSIC"), true, 40.f, PaleGold, 4.f), 34.f);
+		Add(VolumeSlider(GameMode ? GameMode->MusicVolume : 0.7f, true), 6.f);
+		Add(MakeText(TEXT("SOUND EFFECTS"), true, 40.f, PaleGold, 4.f), 18.f);
+		Add(VolumeSlider(GameMode ? GameMode->SfxVolume : 0.8f, false), 6.f);
+		Add(Btn(TEXT("BACK"), FVector2D(380.f, 110.f), Amethyst, Amethyst2, ActMenu), 40.f);
 		break;
 	}
 	case EPuzzleCard::GameOver:
@@ -649,6 +688,34 @@ void UPuzzleHUDWidget::BuildCardContent(EPuzzleCard Card)
 	}
 	default:
 		break;
+	}
+}
+
+void UPuzzleHUDWidget::OnMusicVolumeChanged(float Value)
+{
+	if (APuzzleGameMode* GameMode = GetGameMode())
+	{
+		GameMode->SetMusicVolume(Value);
+	}
+}
+
+void UPuzzleHUDWidget::OnSfxVolumeChanged(float Value)
+{
+	if (APuzzleGameMode* GameMode = GetGameMode())
+	{
+		GameMode->SetSfxVolume(Value);
+	}
+}
+
+void UPuzzleHUDWidget::OnSfxVolumeReleased()
+{
+	// Let go of the slider and hear how loud the effects are now.
+	if (APuzzleGameMode* GameMode = GetGameMode())
+	{
+		if (GameMode->ClearSound)
+		{
+			UGameplayStatics::PlaySound2D(GameMode, GameMode->ClearSound, GameMode->SfxVolume);
+		}
 	}
 }
 

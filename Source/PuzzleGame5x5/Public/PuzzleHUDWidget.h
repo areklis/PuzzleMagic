@@ -83,6 +83,16 @@ public:
 
 	void HandleAction(int32 Action, int32 Param);
 
+	// The volume sliders of the options card.
+	UFUNCTION()
+	void OnMusicVolumeChanged(float Value);
+
+	UFUNCTION()
+	void OnSfxVolumeChanged(float Value);
+
+	UFUNCTION()
+	void OnSfxVolumeReleased();
+
 protected:
 	virtual void NativeOnInitialized() override;
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;

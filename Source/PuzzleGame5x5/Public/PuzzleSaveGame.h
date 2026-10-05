@@ -28,6 +28,13 @@ public:
 	UPROPERTY()
 	bool bOptionBonusTiles = false;
 
+	// Volume sliders in the options card (0 to 1).
+	UPROPERTY()
+	float MusicVolume = 0.7f;
+
+	UPROPERTY()
+	float SfxVolume = 0.8f;
+
 	// The "How to play" pages open by themselves on the very first launch only.
 	UPROPERTY()
 	bool bSeenTutorial = false;

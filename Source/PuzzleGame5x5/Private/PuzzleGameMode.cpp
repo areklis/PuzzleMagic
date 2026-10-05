@@ -7,9 +7,11 @@
 #include "PuzzleHUD.h"
 #include "PuzzleHUDWidget.h"
 #include "PuzzleFX.h"
+#include "PuzzleTile.h"
 #include "PuzzleSaveGame.h"
 #include "GothicEnvironment.h"
 #include "HalloweenProps.h"
+#include "PuzzleLite.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerController.h"
 #include "Sound/SoundBase.h"
@@ -19,6 +21,12 @@
 #include "Misc/Paths.h"
 #include "Components/AudioComponent.h"
 #include "AudioMixerBlueprintLibrary.h"
+#include "EngineUtils.h"
+#include "Components/PrimitiveComponent.h"
+#include "Materials/Material.h"
+#include "Materials/MaterialInterface.h"
+#include "MaterialShared.h"
+#include "TimerManager.h"
 
 APuzzleGameMode::APuzzleGameMode()
 {
@@ -69,6 +77,11 @@ void APuzzleGameMode::StartPlay()
 	Super::StartPlay();
 
 	SaveGame = UPuzzleSaveGame::LoadOrCreate();
+	if (SaveGame)
+	{
+		MusicVolume = SaveGame->MusicVolume;
+		SfxVolume = SaveGame->SfxVolume;
+	}
 	PuzzleManager = NewObject<UPuzzleManager>(this);
 
 	if (GetWorld())
@@ -123,6 +136,72 @@ void APuzzleGameMode::StartPlay()
 	}
 
 	ReframeCamera();
+	// -backdropcapture: renders the picture the lightweight mode uses as its background. Run on a PC with
+	// -demo -grid=8x8 -resx=1280 -resy=720; after ten seconds the board, tiles, interface and sprites are hidden,
+	// a 1920x1080 shot is taken (Saved/Screenshots) and the game quits.
+	if (FParse::Param(FCommandLine::Get(), TEXT("backdropcapture")))
+	{
+		FTimerHandle HideHandle;
+		GetWorldTimerManager().SetTimer(HideHandle, FTimerDelegate::CreateWeakLambda(this, [this]()
+		{
+			for (TActorIterator<AActor> It(GetWorld()); It; ++It)
+			{
+				if (It->IsA<AGridManager>() || It->IsA<APuzzleTile>() || It->IsA<APuzzleFX>())
+				{
+					It->SetActorHiddenInGame(true);
+				}
+				else if (AHalloweenProps* Props = Cast<AHalloweenProps>(*It))
+				{
+					Props->SetCaptureMode();
+				}
+			}
+			if (UPuzzleHUDWidget* UI = GetUI())
+			{
+				UI->SetVisibility(ESlateVisibility::Collapsed);
+			}
+		}), 10.f, false);
+		FTimerHandle ShotHandle;
+		GetWorldTimerManager().SetTimer(ShotHandle, FTimerDelegate::CreateWeakLambda(this, [this]()
+		{
+			if (APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0))
+			{
+				PC->ConsoleCommand(TEXT("HighResShot 1920x1080"));
+			}
+		}), 13.f, false);
+		FTimerHandle QuitHandle;
+		GetWorldTimerManager().SetTimer(QuitHandle, FTimerDelegate::CreateWeakLambda(this, [this]()
+		{
+			if (APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0))
+			{
+				PC->ConsoleCommand(TEXT("quit"));
+			}
+		}), 18.f, false);
+	}
+
+#if PLATFORM_ANDROID && !UE_BUILD_SHIPPING
+	// Test builds on Android run whatever console command is in the system property debug.puzzle.exec
+	// (`adb shell setprop debug.puzzle.exec "r.ScreenPercentage 50"`), so frame-rate experiments need no rebuild.
+	{
+		FTimerHandle ExecHandle;
+		GetWorldTimerManager().SetTimer(ExecHandle, FTimerDelegate::CreateWeakLambda(this, [this]()
+		{
+			static FString LastCommand;
+			char Value[PROP_VALUE_MAX] = {};
+			if (__system_property_get("debug.puzzle.exec", Value) > 0)
+			{
+				const FString Command = UTF8_TO_TCHAR(Value);
+				if (Command != LastCommand)
+				{
+					LastCommand = Command;
+					if (APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0))
+					{
+						PC->ConsoleCommand(Command);
+					}
+				}
+			}
+		}), 1.f, true);
+	}
+#endif
 
 	PlayNextTrack();
 
@@ -200,6 +279,60 @@ void APuzzleGameMode::PlaySfx(USoundBase* Sound, float Volume, float Pitch) cons
 	}
 }
 
+void APuzzleGameMode::PuzzleHide(const FString& What, int32 Hide)
+{
+	const bool bHide = Hide != 0;
+	for (TActorIterator<AActor> It(GetWorld()); It; ++It)
+	{
+		if (What == TEXT("board") && (It->IsA<AGridManager>() || It->IsA<APuzzleTile>()))
+		{
+			It->SetActorHiddenInGame(bHide);
+		}
+		else if (AHalloweenProps* Props = Cast<AHalloweenProps>(*It))
+		{
+			Props->SetLiteLayerHidden(What, bHide);
+		}
+		else if (What == TEXT("light"))
+		{
+			if (AGothicEnvironment* Env = Cast<AGothicEnvironment>(*It))
+			{
+				Env->SetBoardLightOn(!bHide);
+			}
+		}
+	}
+	if (What == TEXT("ui"))
+	{
+		if (UPuzzleHUDWidget* UI = GetUI())
+		{
+			UI->SetVisibility(bHide ? ESlateVisibility::Collapsed : ESlateVisibility::SelfHitTestInvisible);
+		}
+	}
+}
+
+void APuzzleGameMode::SetMusicVolume(float Volume)
+{
+	MusicVolume = FMath::Clamp(Volume, 0.f, 1.f);
+	if (MusicComponent)
+	{
+		MusicComponent->SetVolumeMultiplier(MusicVolume * MusicGain);
+	}
+	if (SaveGame)
+	{
+		SaveGame->MusicVolume = MusicVolume;
+		SaveGame->Save();
+	}
+}
+
+void APuzzleGameMode::SetSfxVolume(float Volume)
+{
+	SfxVolume = FMath::Clamp(Volume, 0.f, 1.f);
+	if (SaveGame)
+	{
+		SaveGame->SfxVolume = SfxVolume;
+		SaveGame->Save();
+	}
+}
+
 void APuzzleGameMode::PlayNextTrack()
 {
 	// Loop lengths of the synthesized tracks (their wave assets loop, so the engine reports no duration).
@@ -218,6 +351,7 @@ void APuzzleGameMode::PlayNextTrack()
 	{
 		MusicComponent->FadeOut(Crossfade, 0.f);
 	}
+	MusicGain = Track.Gain;
 	const float Volume = MusicVolume * Track.Gain;
 	MusicComponent = UGameplayStatics::SpawnSound2D(this, Track.Sound, Volume, 1.f, 0.f, nullptr, true, true);
 	if (MusicComponent && MusicTrackIndex > 1)

@@ -480,8 +480,9 @@ CLASSES = [
     ("MeshBuffers", "board", "Turns ToonMesh buffers into realtime meshes: meshoptimizer ordering, one section per material slot, and a process-wide cache so every tile shares one mesh.", False),
     ("ToonMesh", "board", "Procedural geometry: rounded, bevelled blocks and their outline hulls as raw vertex buffers.", False),
 
-    ("AHalloweenProps", "atmos", "Halloween scenery beside the board: two iron cauldrons of bubbling lime-green liquid with steam and a flickering green glow, and bats that circle above them or cross the top of the scene.", False),
+    ("AHalloweenProps", "atmos", "Halloween scenery beside the board: two iron cauldrons of bubbling lime-green liquid with steam and a flickering green glow, and bats that circle above them or cross the top of the scene. On phones and tablets (or with -lite) it is replaced by the lightweight mode: a pre-rendered backdrop picture and flat bat and steam sprites riding on the camera, plus a resolution controller that holds about 30 frames a second.", False),
     ("AGothicEnvironment", "atmos", "The cathedral around the board and its moods: wall, stained glass, Blender-made piers, candles, flagstones, ambient storms, and the Lovecraftian layer. Dread (low luck) drives breathing and stuttering light, tentacles, eyes, fog, motes, the madness post-process, the MetaSound ambience and the convolution reverb.", False),
+    ("PuzzleLite", "atmos", "IsLite(): whether the lightweight scene is used (phones and tablets, or -lite on a PC; on Android debug.puzzle.lite 0 turns it off for comparisons).", False),
     ("EldritchNoise", "atmos", "Fractal noise for organic shapes and light: FastNoise2 SIMD on Windows, FMath::PerlinNoise elsewhere.", False),
 ]
 
@@ -557,6 +558,7 @@ FLAG_TEXT = {
     "tutorialpage": "Open How to Play at page N (0-based).",
     "dread": "Hold dread at X or above, 0 to 1. For testing and recordings.",
     "grid": "Board size, each side 4 to 8, for example 5x7.",
+    "backdropcapture": "PC only: ten seconds in, hide the board, tiles and interface, save a 1920x1080 shot (Saved/Screenshots) and quit. Renders the lightweight mode's backdrop picture (use with -demo -grid=8x8).",
     "recordaudio": "Record the game's audio mix for N seconds to Saved/Recording/demo_audio.wav, then quit.",
 }
 
@@ -567,6 +569,8 @@ SCRIPTS = [
     ("arcane_body.py", "Unreal editor Python", "M_TileArcane, M_HolyAura, M_PPInkOutline, M_UIPanel, M_UIIcon."),
     ("build_gothic_symbols.py", "Unreal editor Python", "M_TileGothic (the five sigils), M_UIIcon, M_GroundMist."),
     ("build_route_tiles.py", "Unreal editor Python", "M_TileRoute: the tile material with a skeleton hand whose finger points along the route."),
+    ("make_lite_sprites.py", "Python (PIL, numpy)", "Draws the bat wing-flap sheet and the looping steam sheet of the lightweight mobile mode into Tools/LiteArt."),
+    ("build_lite_assets.py", "Unreal editor Python", "Imports the lightweight mode's backdrop picture and sprite sheets and builds M_LiteBackdrop and M_LiteSprite."),
     ("build_halloween_fx.py", "Unreal editor Python", "M_CauldronLiquid, M_SteamPuff and M_BatSilhouette: the lime liquid, steam puffs and bat silhouettes of the Halloween scenery."),
     ("build_bonus_tiles.py", "Unreal editor Python", "M_TileBonus: the tile material for bonus tiles: a full magenta potion bottle (outgoing), an empty one (incoming) or a carved pumpkin (non-directional)."),
     ("build_mist2.py", "Unreal editor Python", "M_GroundMist2."),

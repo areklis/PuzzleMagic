@@ -4,6 +4,8 @@
 #include "Engine/GameViewportClient.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
+#include "Misc/CommandLine.h"
+#include "Misc/Parse.h"
 
 APuzzleCameraPawn::APuzzleCameraPawn()
 {
@@ -47,6 +49,10 @@ void APuzzleCameraPawn::BeginPlay()
 	PP.bOverride_MotionBlurAmount = true;
 	PP.MotionBlurAmount = 0.f;
 
+	// The lightweight mode's backdrop picture is rendered without the grade and film look below, because the live
+	// camera applies them again on top of the picture (-backdropcapture).
+	if (!FParse::Param(FCommandLine::Get(), TEXT("backdropcapture")))
+	{
 	// Storybook grade: richer colour, a touch more contrast, warm highlights over cool moonlit shadows.
 	PP.bOverride_ColorSaturation = true;
 	PP.ColorSaturation = FVector4(1.15f, 1.15f, 1.15f, 1.f);
@@ -64,6 +70,7 @@ void APuzzleCameraPawn::BeginPlay()
 	PP.SceneFringeIntensity = 0.6f;
 	PP.bOverride_VignetteIntensity = true;
 	PP.VignetteIntensity = 0.75f;
+	}
 
 	// Lens flares bloom off lightning, candles and holy light; faint enough to stay out of the way otherwise.
 	PP.bOverride_LensFlareIntensity = true;
@@ -72,10 +79,14 @@ void APuzzleCameraPawn::BeginPlay()
 	PP.LensFlareThreshold = 6.f;
 
 	// Cartoon ink lines wherever depth or normals break (tile edges, bezels, the cathedral).
+	// Not on phones and tablets: this full-screen material does not compile for the mobile renderer, and the engine
+	// then paints its default grey-grid material over the whole screen.
+#if !(PLATFORM_ANDROID || PLATFORM_IOS)
 	if (InkOutlineMaterial)
 	{
 		PP.WeightedBlendables.Array.Add(FWeightedBlendable(1.f, UMaterialInstanceDynamic::Create(InkOutlineMaterial, this)));
 	}
+#endif
 	Camera->PostProcessBlendWeight = 1.f;
 
 	UpdateFraming();

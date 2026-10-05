@@ -16,6 +16,8 @@ Every tile carries a skeleton hand whose finger points up, right, down or left. 
 - **Menus.** P or the MENU button opens a menu (Take over or Resume, Main menu). The main menu has PLAY, SELECT COURSE, PLAY OPTIONS, DEMO (the bot plays) and HOW TO PLAY. The course and options are saved. The move budget from earlier versions is switched off for the MVP.
 - **Landscape only.** The interface scales with the screen height, menu cards shrink to fit small windows, the score sits in the top-right corner and the combo badge hangs between the candles.
 - **Halloween.** A stream of lime-green liquid runs along every cleared route in its direction (magenta for potion chains, orange for pumpkin chains). Two steaming cauldrons of lime-green brew stand beside the board and bats fly around it.
+- **Sound.** Play options has two sliders, MUSIC and SOUND EFFECTS, saved with the other options.
+- **Phones and tablets.** On Android the game uses a lightweight scene so weak GPUs reach about 30 frames a second: the cathedral is one pre-rendered backdrop picture (made from the real scene with `-demo -grid=8x8 -backdropcapture`), the bats and steam are flat animated sprites, and the 3D render resolution adjusts itself while the interface stays sharp. A PC can try it with `-lite`. Run `python Tools/make_lite_sprites.py` and then `Tools/build_lite_assets.py` (editor closed) to rebuild its art.
 - **Look and sound.** Lumen global illumination and reflections, virtual shadow maps and TSR. The chant and organ music, sound effects and ambience are synthesized and play through a cathedral convolution reverb.
 
 ## Requirements

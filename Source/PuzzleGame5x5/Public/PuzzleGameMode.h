@@ -144,6 +144,15 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Puzzle|Feedback")
 	float SfxVolume = 0.8f;
 
+	// The volume sliders. They apply at once and are saved.
+	void SetMusicVolume(float Volume);
+	void SetSfxVolume(float Volume);
+
+	// Console commands for measuring performance on a device (they work in any build with a console).
+	// PuzzleHide <backdrop|bats|steam|board|light|ui> <0|1>   hides (1) or shows (0) that part of the scene.
+	UFUNCTION(Exec)
+	void PuzzleHide(const FString& What, int32 Hide);
+
 	UPuzzleHUDWidget* GetUI() const;
 
 protected:
@@ -173,6 +182,7 @@ protected:
 
 	UPROPERTY()
 	TObjectPtr<class UAudioComponent> MusicComponent;
+	float MusicGain = 1.f; // the playing track's own gain
 
 	UPROPERTY()
 	TObjectPtr<class AGothicEnvironment> Environment;
