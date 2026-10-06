@@ -103,7 +103,8 @@ private:
 	{
 		ActPlay, ActRetry, ActMenu, ActHoly, ActReroll, ActHowTo, ActTutorial,
 		ActPause, ActResume, ActTakeOver, ActStartDemo, ActCourses, ActOptions, ActToggleRelics, ActToggleBonus,
-		ActCourse   // Param = width * 10 + height
+		ActCourse,  // Param = width * 10 + height
+		ActExit
 	};
 
 	void BuildTutorialPage();
@@ -152,6 +153,10 @@ private:
 	TArray<TObjectPtr<UPuzzleButtonProxy>> Proxies;
 
 	TSharedPtr<const struct FCompositeFont> BodyFont;
+	// The menu and "How to play" cards are set in DejaVu Sans Mono (Content/UI/Fonts), regular and bold.
+	TSharedPtr<const struct FCompositeFont> MonoFont;
+	TSharedPtr<const struct FCompositeFont> MonoBoldFont;
+	bool bCardText = false; // true while a card's text is being built
 	TSharedPtr<const struct FCompositeFont> TitleFont;
 
 	UPROPERTY() TObjectPtr<UCanvasPanel> RootCanvas;

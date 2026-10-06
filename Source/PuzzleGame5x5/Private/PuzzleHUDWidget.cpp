@@ -28,6 +28,8 @@
 #include "Misc/Paths.h"
 #include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetSystemLibrary.h"
+#include "Templates/UnrealTemplate.h"
 
 namespace UIStyle
 {
@@ -90,6 +92,11 @@ FSlateFontInfo UPuzzleHUDWidget::Font(bool bTitle, float Size, float Outline) co
 	OutlineSettings.OutlineSize = FMath::RoundToInt(Outline);
 	OutlineSettings.OutlineColor = UIStyle::Ink;
 	OutlineSettings.bApplyOutlineToDropShadows = true;
+	if (bCardText)
+	{
+		// Card text: the same sizes as before, in DejaVu Sans Mono (bold where the heading font was).
+		return FSlateFontInfo(bTitle ? MonoBoldFont : MonoFont, Size, NAME_None, OutlineSettings);
+	}
 	return FSlateFontInfo(bTitle ? TitleFont : BodyFont, Size, NAME_None, OutlineSettings);
 }
 
@@ -213,6 +220,8 @@ void UPuzzleHUDWidget::NativeOnInitialized()
 	const FString FontDir = FPaths::ProjectContentDir() / TEXT("UI/Fonts");
 	BodyFont = MakeShared<FStandaloneCompositeFont>(TEXT("LilitaOne"), FontDir / TEXT("LilitaOne-Regular.ttf"), EFontHinting::Default, EFontLoadingPolicy::LazyLoad);
 	TitleFont = MakeShared<FStandaloneCompositeFont>(TEXT("CinzelDecorative"), FontDir / TEXT("CinzelDecorative-Black.ttf"), EFontHinting::Default, EFontLoadingPolicy::LazyLoad);
+	MonoFont = MakeShared<FStandaloneCompositeFont>(TEXT("DejaVuSansMono"), FontDir / TEXT("DejaVuSansMono.ttf"), EFontHinting::Default, EFontLoadingPolicy::LazyLoad);
+	MonoBoldFont = MakeShared<FStandaloneCompositeFont>(TEXT("DejaVuSansMonoBold"), FontDir / TEXT("DejaVuSansMono-Bold.ttf"), EFontHinting::Default, EFontLoadingPolicy::LazyLoad);
 
 	SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	BuildHUD();
@@ -529,6 +538,7 @@ void UPuzzleHUDWidget::RefreshCard()
 void UPuzzleHUDWidget::BuildCardContent(EPuzzleCard Card)
 {
 	using namespace UIStyle;
+	TGuardValue<bool> CardText(bCardText, true);
 
 	CardContent->ClearChildren();
 	CardStars.Reset();
@@ -575,6 +585,7 @@ void UPuzzleHUDWidget::BuildCardContent(EPuzzleCard Card)
 		Add(Btn(TEXT("PLAY OPTIONS"), FVector2D(520.f, 100.f), Amethyst, Amethyst2, ActOptions), 14.f);
 		Add(Btn(TEXT("DEMO"), FVector2D(520.f, 100.f), Amethyst, Amethyst2, ActStartDemo), 14.f);
 		Add(Btn(TEXT("HOW TO PLAY"), FVector2D(520.f, 100.f), Amethyst, Amethyst2, ActHowTo), 14.f);
+		Add(Btn(TEXT("EXIT"), FVector2D(520.f, 100.f), Ruby, Ruby2, ActExit), 14.f);
 		break;
 	}
 	case EPuzzleCard::Pause:
@@ -738,6 +749,9 @@ void UPuzzleHUDWidget::HandleAction(int32 Action, int32 Param)
 	case ActResume:  GameMode->ClosePauseMenu(); break;
 	case ActTakeOver: GameMode->TakeOver(); break;
 	case ActStartDemo: GameMode->StartDemo(); break;
+	case ActExit:
+		UKismetSystemLibrary::QuitGame(GameMode, GetOwningPlayer(), EQuitPreference::Quit, false);
+		break;
 	case ActCourses: ShowCard(EPuzzleCard::Courses); break;
 	case ActCourse:
 		GameMode->SetCourse(Param / 10, Param % 10);
