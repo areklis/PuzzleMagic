@@ -30,6 +30,7 @@
 
 APuzzleGameMode::APuzzleGameMode()
 {
+	PrimaryActorTick.bCanEverTick = true; // the arcade clock
 	GridManagerClass = AGridManager::StaticClass();
 	InputHandlerClass = APuzzleInputHandler::StaticClass();
 	DefaultPawnClass = APuzzleCameraPawn::StaticClass();
@@ -83,6 +84,7 @@ void APuzzleGameMode::StartPlay()
 		SfxVolume = SaveGame->SfxVolume;
 	}
 	PuzzleManager = NewObject<UPuzzleManager>(this);
+	LoadCampaign();
 
 	if (GetWorld())
 	{
@@ -105,7 +107,7 @@ void APuzzleGameMode::StartPlay()
 	if (SaveGame)
 	{
 		PuzzleManager->SetExtrasEnabled(SaveGame->bOptionRelics);
-		PuzzleManager->bBonusTilesEnabled = SaveGame->bOptionBonusTiles;
+		PuzzleManager->SetBonusTilesEnabled(SaveGame->bOptionBonusTiles);
 	}
 
 	if (InputHandler)
@@ -399,6 +401,7 @@ void APuzzleGameMode::StartRound()
 
 void APuzzleGameMode::ShowMenu()
 {
+	LeaveArcade();
 	for (FTimerHandle& Handle : RoundTimers)
 	{
 		GetWorldTimerManager().ClearTimer(Handle);
@@ -505,7 +508,7 @@ void APuzzleGameMode::SetOptions(bool bRelics, bool bBonusTiles)
 	if (PuzzleManager)
 	{
 		PuzzleManager->SetExtrasEnabled(bRelics);
-		PuzzleManager->bBonusTilesEnabled = bBonusTiles;
+		PuzzleManager->SetBonusTilesEnabled(bBonusTiles);
 	}
 	if (SaveGame)
 	{
@@ -556,6 +559,7 @@ void APuzzleGameMode::HandlePiecePlaced()
 
 void APuzzleGameMode::HandleCleared(const FPuzzleClearEvent& Event)
 {
+	CheckArcadeWin();
 	const float Delay = Event.bHolyLight ? 0.1f : AGridManager::ArriveDuration + 0.1f;
 	Later(Delay, [this, Event]()
 	{
@@ -627,6 +631,10 @@ void APuzzleGameMode::HandleBonusSpawned(FIntPoint Cell)
 
 void APuzzleGameMode::HandleFinished()
 {
+	if (bArcade && ArcadeState != EArcadeState::Playing)
+	{
+		return; // already won or failed
+	}
 	bGameOver = true;
 	Flow = EPuzzleFlow::Finished;
 	if (InputHandler)
@@ -636,7 +644,7 @@ void APuzzleGameMode::HandleFinished()
 
 	bLastNewBest = false;
 	// The demo bot's results never touch the player's progress.
-	if (SaveGame && !bAutoPlayEnabled && PuzzleManager && PuzzleManager->Score > SaveGame->BestScore)
+	if (SaveGame && !bArcade && !bAutoPlayEnabled && PuzzleManager && PuzzleManager->Score > SaveGame->BestScore)
 	{
 		SaveGame->BestScore = PuzzleManager->Score;
 		bLastNewBest = true;
@@ -652,6 +660,24 @@ void APuzzleGameMode::HandleFinished()
 			GridManager->CollapseBoard();
 		}
 	});
+
+	if (bArcade)
+	{
+		ArcadeState = EArcadeState::Failed;
+		ArcadeFailReason = TEXT("No room left!");
+		Later(2.0f, [this]()
+		{
+			if (bArcade && ArcadeState == EArcadeState::Failed)
+			{
+				Flow = EPuzzleFlow::Menu;
+				if (UPuzzleHUDWidget* UI = GetUI())
+				{
+					UI->ShowCard(EPuzzleCard::ArcadeFail);
+				}
+			}
+		});
+		return;
+	}
 
 	Later(2.0f, [this]()
 	{

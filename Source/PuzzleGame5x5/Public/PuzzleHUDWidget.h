@@ -31,7 +31,12 @@ enum class EPuzzleCard : uint8
 	Tutorial,
 	Pause,
 	Courses,
-	Options
+	Options,
+	ArcadeMenu,   // continue or start over
+	ArcadeIntro,  // the popup before a challenge
+	ArcadeOutro,  // the popup after a challenge is won
+	ArcadeFail,
+	ArcadeDone    // after the last challenge
 };
 
 // Buttons never take keyboard focus, so game keys keep reaching the player controller after a click.
@@ -104,7 +109,8 @@ private:
 		ActPlay, ActRetry, ActMenu, ActHoly, ActReroll, ActHowTo, ActTutorial,
 		ActPause, ActResume, ActTakeOver, ActStartDemo, ActCourses, ActOptions, ActToggleRelics, ActToggleBonus,
 		ActCourse,  // Param = width * 10 + height
-		ActExit
+		ActExit,
+		ActArcade, ActArcadeStart, ActArcadeBegin, ActArcadeNext, ActArcadeRetry // ActArcadeStart's Param = challenge to start at
 	};
 
 	void BuildTutorialPage();

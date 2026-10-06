@@ -32,10 +32,25 @@ public:
 	bool bComboEnabled = false;
 	bool bRelicsEnabled = false;
 	bool bLuckEnabled = false;
-	void SetExtrasEnabled(bool bOn) { bComboEnabled = bOn; bRelicsEnabled = bOn; bLuckEnabled = bOn; }
+	void SetExtrasEnabled(bool bOn) { bComboEnabled = bOn; bRelicsEnabled = bOn; bLuckEnabled = bOn; bHolyLightEnabled = true; bRerollEnabled = true; }
+
+	// Which relics are in play while relics are on: the Play options switch both together, an arcade challenge picks one by one.
+	bool bHolyLightEnabled = true;
+	bool bRerollEnabled = true;
+	bool IsRelicEnabled(ERelic Relic) const { return bRelicsEnabled && (Relic == ERelic::HolyLight ? bHolyLightEnabled : bRerollEnabled); }
 
 	// Play option "Bonus tiles". Stored here; the bonus tiles themselves come in a later step.
 	bool bBonusTilesEnabled = false;
+
+	// Which bonus tiles drop while bonus tiles are on (the Play options switch all three together).
+	bool bPumpkinEnabled = true;
+	bool bOutgoingBottleEnabled = true;
+	bool bIncomingBottleEnabled = true;
+	void SetBonusTilesEnabled(bool bOn) { bBonusTilesEnabled = bOn; bPumpkinEnabled = bOn; bOutgoingBottleEnabled = bOn; bIncomingBottleEnabled = bOn; }
+
+	// An arcade challenge: relics and bonus tiles one by one. Either relic switches combos, relics and luck on
+	// (relics are earned through combos and paid for with luck); any bonus tile switches bonus tiles on.
+	void ConfigureItems(bool bHolyLight, bool bReroll, bool bPumpkin, bool bOutgoingBottle, bool bIncomingBottle);
 
 	// A combo breaks after this many placements in a row without a clear (so it survives one fewer).
 	static constexpr int32 ComboWindowMoves = 3;

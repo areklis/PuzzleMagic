@@ -6,6 +6,20 @@ void UPuzzleManager::BindToGrid(AGridManager* InGridManager)
 	GridManager = InGridManager;
 }
 
+void UPuzzleManager::ConfigureItems(bool bHolyLight, bool bReroll, bool bPumpkin, bool bOutgoingBottle, bool bIncomingBottle)
+{
+	const bool bAnyRelic = bHolyLight || bReroll;
+	bComboEnabled = bAnyRelic;
+	bRelicsEnabled = bAnyRelic;
+	bLuckEnabled = bAnyRelic;
+	bHolyLightEnabled = bHolyLight;
+	bRerollEnabled = bReroll;
+	bPumpkinEnabled = bPumpkin;
+	bOutgoingBottleEnabled = bOutgoingBottle;
+	bIncomingBottleEnabled = bIncomingBottle;
+	bBonusTilesEnabled = bPumpkin || bOutgoingBottle || bIncomingBottle;
+}
+
 void UPuzzleManager::StartGame()
 {
 	Score = 0;
@@ -17,8 +31,8 @@ void UPuzzleManager::StartGame()
 	MovesMade = 0;
 	LastBonusMoves = 0;
 	// One of each to start, so the relic buttons are learnable from the first move.
-	RelicCharges[0] = bRelicsEnabled ? 1 : 0;
-	RelicCharges[1] = bRelicsEnabled ? 1 : 0;
+	RelicCharges[0] = IsRelicEnabled(ERelic::HolyLight) ? 1 : 0;
+	RelicCharges[1] = IsRelicEnabled(ERelic::Reroll) ? 1 : 0;
 	NextRelicCombo = RelicComboStep;
 	NextRelic = ERelic::HolyLight;
 	bFinished = false;
@@ -223,7 +237,7 @@ void UPuzzleManager::SpawnDueBonusTiles()
 	if (Score >= NextBasicBonusScore)
 	{
 		NextBasicBonusScore = (Score / BasicBonusEvery + 1) * BasicBonusEvery;
-		if (GridManager->CountBonusTiles(EPuzzleBonus::Basic) < MaxBasicBonusTiles && GridManager->SpawnBonusTile(EPuzzleBonus::Basic, Cell))
+		if (bPumpkinEnabled && GridManager->CountBonusTiles(EPuzzleBonus::Basic) < MaxBasicBonusTiles && GridManager->SpawnBonusTile(EPuzzleBonus::Basic, Cell))
 		{
 			OnBonusSpawned.Broadcast(Cell);
 		}
@@ -231,11 +245,11 @@ void UPuzzleManager::SpawnDueBonusTiles()
 	if (Score >= NextPairBonusScore)
 	{
 		NextPairBonusScore = (Score / PairBonusEvery + 1) * PairBonusEvery;
-		if (GridManager->CountBonusTiles(EPuzzleBonus::Outgoing) < MaxDirectionalBonusTiles && GridManager->SpawnBonusTile(EPuzzleBonus::Outgoing, Cell))
+		if (bOutgoingBottleEnabled && GridManager->CountBonusTiles(EPuzzleBonus::Outgoing) < MaxDirectionalBonusTiles && GridManager->SpawnBonusTile(EPuzzleBonus::Outgoing, Cell))
 		{
 			OnBonusSpawned.Broadcast(Cell);
 		}
-		if (GridManager->CountBonusTiles(EPuzzleBonus::Incoming) < MaxDirectionalBonusTiles && GridManager->SpawnBonusTile(EPuzzleBonus::Incoming, Cell))
+		if (bIncomingBottleEnabled && GridManager->CountBonusTiles(EPuzzleBonus::Incoming) < MaxDirectionalBonusTiles && GridManager->SpawnBonusTile(EPuzzleBonus::Incoming, Cell))
 		{
 			OnBonusSpawned.Broadcast(Cell);
 		}
@@ -255,13 +269,20 @@ void UPuzzleManager::GrantRelics()
 	while (ComboStreak >= NextRelicCombo)
 	{
 		NextRelicCombo += RelicComboStep;
-		int32& Charges = RelicCharges[static_cast<int32>(NextRelic)];
+		const ERelic Other = NextRelic == ERelic::HolyLight ? ERelic::Reroll : ERelic::HolyLight;
+		// A relic that is not in play is skipped in favour of the other one.
+		const ERelic Which = IsRelicEnabled(NextRelic) ? NextRelic : Other;
+		NextRelic = Other;
+		if (!IsRelicEnabled(Which))
+		{
+			continue;
+		}
+		int32& Charges = RelicCharges[static_cast<int32>(Which)];
 		if (Charges < MaxRelicCharges)
 		{
 			++Charges;
-			OnRelicGained.Broadcast(NextRelic);
+			OnRelicGained.Broadcast(Which);
 		}
-		NextRelic = NextRelic == ERelic::HolyLight ? ERelic::Reroll : ERelic::HolyLight;
 	}
 }
 

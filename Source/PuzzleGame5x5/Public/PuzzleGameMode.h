@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
 #include "PuzzleTypes.h"
+#include "ArcadeCampaign.h"
 #include "PuzzleGameMode.generated.h"
 
 class AGridManager;
@@ -32,6 +33,7 @@ public:
 	APuzzleGameMode();
 
 	virtual void StartPlay() override;
+	virtual void Tick(float DeltaSeconds) override;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Puzzle")
 	TObjectPtr<AGridManager> GridManager;
@@ -73,6 +75,28 @@ public:
 	void SetCourse(int32 Width, int32 Height);
 	// The play options. Relics means combo, relics and luck together.
 	void SetOptions(bool bRelics, bool bBonusTiles);
+
+	// --- Arcade: a campaign of sequential challenges, the UArcadeCampaign data asset /Game/Arcade/DA_ArcadeCampaign ---
+	bool HasArcade() const;
+	bool IsArcade() const { return bArcade; }
+	EArcadeState GetArcadeState() const { return ArcadeState; }
+	const FArcadeChallenge* GetArcadeChallenge() const; // the one being played, null outside the arcade
+	int32 GetArcadeIndex() const { return ArcadeIndex; }
+	int32 GetArcadeCount() const;
+	int32 GetArcadeProgress() const; // challenges beaten in a row, saved
+	float GetArcadeTimeLeft() const { return ArcadeTimeLeft; }
+	const UArcadeCampaign* GetArcadeCampaign() const { return Campaign; }
+	FString ArcadeFailReason;
+	// From the main menu: offers to continue, or goes straight to the first challenge when nothing is beaten yet.
+	void OpenArcade();
+	void StartArcade(int32 FromIndex);
+	void BeginArcadeChallenge(); // the START button of the intro popup: starts the clock
+	void ArcadeAdvance();        // the NEXT button of the outro popup
+	void ArcadeRetry();          // the RETRY button of the fail popup
+
+	// Console command for trying a challenge's popups without playing it: PuzzleArcadeTest win | fail | time (5 seconds left).
+	UFUNCTION(Exec)
+	void PuzzleArcadeTest(const FString& What);
 
 	UPROPERTY(BlueprintReadOnly, Category = "Puzzle")
 	bool bPauseMenuOpen = false;
@@ -162,6 +186,19 @@ protected:
 	void HandleRelicGained(ERelic Relic);
 	void HandleBonusSpawned(FIntPoint Cell);
 	void HandleFinished();
+
+	void LoadCampaign();
+	void PrepareArcadeChallenge(bool bShowIntro);
+	void LeaveArcade();
+	void CheckArcadeWin();
+	void FailArcade(const FString& Reason);
+
+	UPROPERTY()
+	TObjectPtr<UArcadeCampaign> Campaign;
+	bool bArcade = false;
+	int32 ArcadeIndex = 0;
+	EArcadeState ArcadeState = EArcadeState::None;
+	float ArcadeTimeLeft = 0.f;
 
 	void ReframeCamera();
 	void PlayNextTrack();

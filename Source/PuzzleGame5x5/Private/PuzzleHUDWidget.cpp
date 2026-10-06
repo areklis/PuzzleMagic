@@ -572,7 +572,15 @@ void UPuzzleHUDWidget::BuildCardContent(EPuzzleCard Card)
 		Add(MakeText(FString::Printf(TEXT("course  %dx%d"), Board ? Board->GridWidth : 8, Board ? Board->GridHeight : 8), false, 30.f, Cyan, 3.f), 6.f);
 		const int32 Best = Save ? Save->BestScore : 0;
 		Add(MakeText(Best > 0 ? FString::Printf(TEXT("best  %d"), Best) : TEXT("no best yet"), false, 30.f, PaleGold, 3.f), 2.f);
-		Add(Btn(TEXT("SELECT COURSE"), FVector2D(520.f, 100.f), Amethyst, Amethyst2, ActCourses), 22.f);
+		if (GameMode && GameMode->HasArcade())
+		{
+			Add(Btn(TEXT("ARCADE"), FVector2D(520.f, 100.f), Emerald, Emerald2, ActArcade), 22.f);
+			Add(Btn(TEXT("SELECT COURSE"), FVector2D(520.f, 100.f), Amethyst, Amethyst2, ActCourses), 14.f);
+		}
+		else
+		{
+			Add(Btn(TEXT("SELECT COURSE"), FVector2D(520.f, 100.f), Amethyst, Amethyst2, ActCourses), 22.f);
+		}
 		Add(Btn(TEXT("PLAY OPTIONS"), FVector2D(520.f, 100.f), Amethyst, Amethyst2, ActOptions), 14.f);
 		Add(Btn(TEXT("DEMO"), FVector2D(520.f, 100.f), Amethyst, Amethyst2, ActStartDemo), 14.f);
 		Add(Btn(TEXT("HOW TO PLAY"), FVector2D(520.f, 100.f), Amethyst, Amethyst2, ActHowTo), 14.f);
@@ -667,6 +675,107 @@ void UPuzzleHUDWidget::BuildCardContent(EPuzzleCard Card)
 		Add(Btn(TEXT("BACK"), FVector2D(380.f, 110.f), Amethyst, Amethyst2, ActMenu), 40.f);
 		break;
 	}
+	case EPuzzleCard::ArcadeMenu:
+	{
+		const int32 Progress = GameMode ? GameMode->GetArcadeProgress() : 0;
+		const int32 Count = GameMode ? GameMode->GetArcadeCount() : 0;
+		const UArcadeCampaign* Camp = GameMode ? GameMode->GetArcadeCampaign() : nullptr;
+		Add(MakeText(TEXT("Arcade"), true, 84.f, Gold, 6.f));
+		if (Camp && !Camp->CampaignName.IsEmpty() && Camp->CampaignName != TEXT("Arcade"))
+		{
+			Add(MakeText(Camp->CampaignName, false, 32.f, Lavender, 3.f), 4.f);
+		}
+		Add(MakeText(FString::Printf(TEXT("%d of %d challenges beaten"), Progress, Count), false, 30.f, Cyan, 3.f), 12.f);
+		if (Progress < Count)
+		{
+			Add(Btn(FString::Printf(TEXT("CONTINUE  %d"), Progress + 1), FVector2D(560.f, 136.f), Emerald, Emerald2, ActArcadeStart, Progress), 36.f);
+			Add(Btn(TEXT("START OVER"), FVector2D(560.f, 116.f), Amethyst, Amethyst2, ActArcadeStart, 0), 20.f);
+		}
+		else
+		{
+			Add(Btn(TEXT("PLAY AGAIN"), FVector2D(560.f, 136.f), Emerald, Emerald2, ActArcadeStart, 0), 36.f);
+		}
+		Add(Btn(TEXT("BACK"), FVector2D(380.f, 110.f), Amethyst, Amethyst2, ActMenu), 24.f);
+		break;
+	}
+	case EPuzzleCard::ArcadeIntro:
+	case EPuzzleCard::ArcadeOutro:
+	case EPuzzleCard::ArcadeFail:
+	case EPuzzleCard::ArcadeDone:
+	{
+		const FArcadeChallenge* Challenge = GameMode ? GameMode->GetArcadeChallenge() : nullptr;
+		const UArcadeCampaign* Camp = GameMode ? GameMode->GetArcadeCampaign() : nullptr;
+		const int32 Index = GameMode ? GameMode->GetArcadeIndex() : 0;
+		const int32 Count = GameMode ? GameMode->GetArcadeCount() : 0;
+		auto Body = [&](const FString& Text, float Size, const FLinearColor& Color, float Top)
+		{
+			UTextBlock* Block = MakeText(Text, false, Size, Color, 3.f);
+			Block->SetAutoWrapText(true);
+			Add(Block, Top, HAlign_Fill);
+		};
+		if (Card == EPuzzleCard::ArcadeDone)
+		{
+			Add(MakeText(TEXT("Arcade"), true, 72.f, Gold, 6.f));
+			Add(MakeText(TEXT("COMPLETE"), true, 72.f, Gold, 6.f), -6.f);
+			if (Camp && !Camp->FinaleText.IsEmpty())
+			{
+				Body(Camp->FinaleText, 30.f, FLinearColor(0.9f, 0.86f, 1.f), 30.f);
+			}
+			Add(Btn(TEXT("MENU"), FVector2D(380.f, 124.f), Amethyst, Amethyst2, ActMenu), 40.f);
+			break;
+		}
+		const FString Title = Challenge ? Challenge->Title : FString();
+		if (Card == EPuzzleCard::ArcadeIntro)
+		{
+			Add(MakeText(FString::Printf(TEXT("CHALLENGE  %d / %d"), Index + 1, Count), false, 28.f, Lavender, 3.f));
+			Add(MakeText(Title, true, Title.Len() > 14 ? 52.f : 68.f, Gold, 6.f), 6.f);
+			if (Challenge)
+			{
+				// The rules in a few lines: goal, clock, board, relics and bonus tiles.
+				TArray<FString> Relics, Bonus;
+				if (Challenge->bHolyLight) { Relics.Add(TEXT("Holy Light")); }
+				if (Challenge->bReroll) { Relics.Add(TEXT("Reroll")); }
+				if (Challenge->bPumpkin) { Bonus.Add(TEXT("pumpkin")); }
+				if (Challenge->bOutgoingBottle) { Bonus.Add(TEXT("full potion")); }
+				if (Challenge->bIncomingBottle) { Bonus.Add(TEXT("empty potion")); }
+				const int32 Seconds = Challenge->TimeLimitSeconds;
+				FString RulesText = FString::Printf(TEXT("Reach  %d  points\n%s\nBoard  %dx%d\nRelics:  %s\nBonus tiles:  %s"),
+					Challenge->TargetScore,
+					Seconds > 0 ? *FString::Printf(TEXT("Time limit  %d:%02d"), Seconds / 60, Seconds % 60) : TEXT("No time limit"),
+					Challenge->GridWidth, Challenge->GridHeight,
+					Relics.Num() > 0 ? *FString::Join(Relics, TEXT(", ")) : TEXT("none"),
+					Bonus.Num() > 0 ? *FString::Join(Bonus, TEXT(", ")) : TEXT("none"));
+				Body(RulesText, 30.f, Cyan, 22.f);
+				if (!Challenge->IntroText.IsEmpty())
+				{
+					Body(Challenge->IntroText, 30.f, FLinearColor(0.9f, 0.86f, 1.f), 26.f);
+				}
+			}
+			Add(Btn(TEXT("START"), FVector2D(560.f, 136.f), Emerald, Emerald2, ActArcadeBegin), 36.f);
+		}
+		else if (Card == EPuzzleCard::ArcadeOutro)
+		{
+			const bool bLast = Index + 1 >= Count;
+			Add(MakeText(TEXT("COMPLETE!"), true, 72.f, Gold, 6.f));
+			Add(MakeText(Title, false, 38.f, PaleGold, 4.f), 4.f);
+			Body(FString::Printf(TEXT("score  %d"), GameMode && GameMode->PuzzleManager ? GameMode->PuzzleManager->Score : 0), 30.f, Cyan, 10.f);
+			if (Challenge && !Challenge->OutroText.IsEmpty())
+			{
+				Body(Challenge->OutroText, 30.f, FLinearColor(0.9f, 0.86f, 1.f), 26.f);
+			}
+			Add(Btn(bLast ? TEXT("FINISH") : TEXT("NEXT"), FVector2D(560.f, 136.f), Emerald, Emerald2, ActArcadeNext), 36.f);
+		}
+		else
+		{
+			Add(MakeText(TEXT("FAILED"), true, 72.f, FLinearColor(1.f, 0.25f, 0.3f), 6.f));
+			Add(MakeText(Title, false, 38.f, PaleGold, 4.f), 4.f);
+			Body(GameMode ? GameMode->ArcadeFailReason : FString(), 34.f, Lavender, 14.f);
+			Body(FString::Printf(TEXT("score  %d / %d"), GameMode && GameMode->PuzzleManager ? GameMode->PuzzleManager->Score : 0, Challenge ? Challenge->TargetScore : 0), 30.f, Cyan, 10.f);
+			Add(ButtonRow(Sized(MakeTextButton(TEXT("MENU"), FVector2D(280.f, 124.f), Amethyst, Amethyst2, ActMenu), FVector2D(280.f, 124.f)),
+				Sized(MakeTextButton(TEXT("RETRY"), FVector2D(380.f, 124.f), Emerald, Emerald2, ActArcadeRetry), FVector2D(380.f, 124.f))), 40.f);
+		}
+		break;
+	}
 	case EPuzzleCard::GameOver:
 	{
 		const bool bOutOfMoves = Rules && Rules->IsOutOfMoves();
@@ -740,6 +849,11 @@ void UPuzzleHUDWidget::HandleAction(int32 Action, int32 Param)
 	case ActResume:  GameMode->ClosePauseMenu(); break;
 	case ActTakeOver: GameMode->TakeOver(); break;
 	case ActStartDemo: GameMode->StartDemo(); break;
+	case ActArcade:      GameMode->OpenArcade(); break;
+	case ActArcadeStart: GameMode->StartArcade(Param); break;
+	case ActArcadeBegin: GameMode->BeginArcadeChallenge(); break;
+	case ActArcadeNext:  GameMode->ArcadeAdvance(); break;
+	case ActArcadeRetry: GameMode->ArcadeRetry(); break;
 	case ActExit:
 		UKismetSystemLibrary::QuitGame(GameMode, GetOwningPlayer(), EQuitPreference::Quit, false);
 		break;
@@ -1175,7 +1289,7 @@ void UPuzzleHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime
 		const int32 Charges = Rules->GetRelicCharges(static_cast<ERelic>(RelicIndex));
 		RelicCounts[RelicIndex]->SetText(FText::AsNumber(Charges));
 		// Never disabled (Slate's disabled look greys the icon out); clicks are ignored by the game mode instead.
-		RelicBadges[RelicIndex]->SetVisibility(bPlayingView && Rules->bRelicsEnabled ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+		RelicBadges[RelicIndex]->SetVisibility(bPlayingView && Rules->IsRelicEnabled(static_cast<ERelic>(RelicIndex)) ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
 		RelicBadges[RelicIndex]->SetRenderOpacity(Charges > 0 && (bInput || GameMode->bAutoPlayEnabled) ? 1.f : 0.5f);
 
 		RelicPop[RelicIndex] = FMath::Max(RelicPop[RelicIndex] - InDeltaTime * 2.f, 0.f);
@@ -1251,6 +1365,21 @@ void UPuzzleHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime
 	{
 		Hint = Rules->bRelicsEnabled ? TEXT("No room! Use a relic") : TEXT("No room left");
 		HintColor = FLinearColor(1.f, 0.3f, 0.25f, 0.75f + 0.25f * FMath::Sin(Time * 8.f));
+	}
+	else if (GameMode->IsArcade() && GameMode->GetArcadeState() == EArcadeState::Playing && GameMode->GetArcadeChallenge())
+	{
+		const FArcadeChallenge* Challenge = GameMode->GetArcadeChallenge();
+		Hint = FString::Printf(TEXT("%d/%d  %s\nGOAL  %d / %d"), GameMode->GetArcadeIndex() + 1, GameMode->GetArcadeCount(), *Challenge->Title, Rules->Score, Challenge->TargetScore);
+		HintColor = PaleGold;
+		if (Challenge->TimeLimitSeconds > 0)
+		{
+			const int32 Left = FMath::CeilToInt(GameMode->GetArcadeTimeLeft());
+			Hint += FString::Printf(TEXT("\nTIME  %d:%02d"), Left / 60, Left % 60);
+			if (Left <= 10)
+			{
+				HintColor = FLinearColor(1.f, 0.3f, 0.25f, 0.75f + 0.25f * FMath::Sin(Time * 8.f));
+			}
+		}
 	}
 	else if (GameMode->Flow == EPuzzleFlow::Playing)
 	{
