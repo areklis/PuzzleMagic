@@ -29,7 +29,6 @@
 #include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
-#include "Templates/UnrealTemplate.h"
 
 namespace UIStyle
 {
@@ -92,11 +91,6 @@ FSlateFontInfo UPuzzleHUDWidget::Font(bool bTitle, float Size, float Outline) co
 	OutlineSettings.OutlineSize = FMath::RoundToInt(Outline);
 	OutlineSettings.OutlineColor = UIStyle::Ink;
 	OutlineSettings.bApplyOutlineToDropShadows = true;
-	if (bCardText)
-	{
-		// Card text: the same sizes as before, in DejaVu Sans Mono (bold where the heading font was).
-		return FSlateFontInfo(bTitle ? MonoBoldFont : MonoFont, Size, NAME_None, OutlineSettings);
-	}
 	return FSlateFontInfo(bTitle ? TitleFont : BodyFont, Size, NAME_None, OutlineSettings);
 }
 
@@ -220,8 +214,6 @@ void UPuzzleHUDWidget::NativeOnInitialized()
 	const FString FontDir = FPaths::ProjectContentDir() / TEXT("UI/Fonts");
 	BodyFont = MakeShared<FStandaloneCompositeFont>(TEXT("LilitaOne"), FontDir / TEXT("LilitaOne-Regular.ttf"), EFontHinting::Default, EFontLoadingPolicy::LazyLoad);
 	TitleFont = MakeShared<FStandaloneCompositeFont>(TEXT("CinzelDecorative"), FontDir / TEXT("CinzelDecorative-Black.ttf"), EFontHinting::Default, EFontLoadingPolicy::LazyLoad);
-	MonoFont = MakeShared<FStandaloneCompositeFont>(TEXT("DejaVuSansMono"), FontDir / TEXT("DejaVuSansMono.ttf"), EFontHinting::Default, EFontLoadingPolicy::LazyLoad);
-	MonoBoldFont = MakeShared<FStandaloneCompositeFont>(TEXT("DejaVuSansMonoBold"), FontDir / TEXT("DejaVuSansMono-Bold.ttf"), EFontHinting::Default, EFontLoadingPolicy::LazyLoad);
 
 	SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	BuildHUD();
@@ -538,7 +530,6 @@ void UPuzzleHUDWidget::RefreshCard()
 void UPuzzleHUDWidget::BuildCardContent(EPuzzleCard Card)
 {
 	using namespace UIStyle;
-	TGuardValue<bool> CardText(bCardText, true);
 
 	CardContent->ClearChildren();
 	CardStars.Reset();

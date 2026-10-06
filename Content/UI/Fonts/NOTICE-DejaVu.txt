@@ -1,9 +1,0 @@
-DejaVu Sans Mono (DejaVuSansMono.ttf, DejaVuSansMono-Bold.ttf)
-
-The DejaVu fonts are derived from Bitstream Vera. The Bitstream Vera glyphs are copyright Bitstream, Inc.;
-the DejaVu changes are in the public domain; glyphs imported from the Arev fonts are copyright
-Tavmjong Bah. The fonts may be used, copied, embedded and redistributed, including with software, for any
-purpose, provided the copyright notices stay with them and the fonts are not sold on their own and are
-not distributed under the names "Bitstream Vera" or "DejaVu" when modified.
-
-Full license text: https://dejavu-fonts.github.io/License.html

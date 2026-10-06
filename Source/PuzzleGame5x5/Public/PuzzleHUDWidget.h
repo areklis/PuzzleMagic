@@ -153,10 +153,6 @@ private:
 	TArray<TObjectPtr<UPuzzleButtonProxy>> Proxies;
 
 	TSharedPtr<const struct FCompositeFont> BodyFont;
-	// The menu and "How to play" cards are set in DejaVu Sans Mono (Content/UI/Fonts), regular and bold.
-	TSharedPtr<const struct FCompositeFont> MonoFont;
-	TSharedPtr<const struct FCompositeFont> MonoBoldFont;
-	bool bCardText = false; // true while a card's text is being built
 	TSharedPtr<const struct FCompositeFont> TitleFont;
 
 	UPROPERTY() TObjectPtr<UCanvasPanel> RootCanvas;
