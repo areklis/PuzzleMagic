@@ -664,7 +664,7 @@ void APuzzleGameMode::HandleFinished()
 	if (bArcade)
 	{
 		ArcadeState = EArcadeState::Failed;
-		ArcadeFailReason = TEXT("No room left!");
+		ArcadeFailReason = (GridManager && GridManager->IsOutOfCuratedPieces()) ? TEXT("Out of pieces!") : TEXT("No room left!");
 		Later(2.0f, [this]()
 		{
 			if (bArcade && ArcadeState == EArcadeState::Failed)

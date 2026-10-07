@@ -111,6 +111,8 @@ public:
 	int32 GetLuck() const { return Luck; }
 	int32 Score = 0;
 	int32 ComboStreak = 0;
+	// Routes cleared since the round began (a campaign step can ask for a number of them).
+	int32 RoutesCleared = 0;
 	// Placements left before the combo breaks (shown as pips).
 	int32 ComboWindow = 0;
 	int32 LastRoundScore = 0;

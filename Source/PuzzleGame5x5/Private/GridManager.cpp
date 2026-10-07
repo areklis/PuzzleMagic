@@ -1231,10 +1231,100 @@ void AGridManager::RefillTrayIfEmpty()
 		}
 	}
 
+	if (CuratedBuckets.Num() > 0)
+	{
+		if (NextBucket >= CuratedBuckets.Num() && CuratedAfter == ECampaignTrayAfter::Loop)
+		{
+			NextBucket = 0;
+		}
+		if (NextBucket < CuratedBuckets.Num())
+		{
+			// The next bucket: the slots beyond its pieces stay empty.
+			const TArray<FPuzzlePieceShape>& Bucket = CuratedBuckets[NextBucket++];
+			for (int32 SlotIndex = 0; SlotIndex < TraySize && SlotIndex < Bucket.Num(); ++SlotIndex)
+			{
+				Tray[SlotIndex] = Bucket[SlotIndex];
+				TraySlotUsed[SlotIndex] = false;
+			}
+			return;
+		}
+		if (CuratedAfter == ECampaignTrayAfter::End)
+		{
+			return; // out of pieces: the tray stays bare
+		}
+	}
+
 	for (int32 SlotIndex = 0; SlotIndex < TraySize; ++SlotIndex)
 	{
 		Tray[SlotIndex] = PieceLibrary::MakeRandomPieceRandomColor();
 		TraySlotUsed[SlotIndex] = false;
+	}
+}
+
+void AGridManager::SetCuratedTray(const TArray<TArray<FPuzzlePieceShape>>& Buckets, ECampaignTrayAfter After)
+{
+	CuratedBuckets = Buckets;
+	CuratedAfter = After;
+	NextBucket = 0;
+}
+
+void AGridManager::ClearCuratedTray()
+{
+	CuratedBuckets.Reset();
+	CuratedAfter = ECampaignTrayAfter::Random;
+	NextBucket = 0;
+}
+
+bool AGridManager::IsOutOfCuratedPieces() const
+{
+	if (CuratedBuckets.Num() == 0 || CuratedAfter != ECampaignTrayAfter::End || NextBucket < CuratedBuckets.Num())
+	{
+		return false;
+	}
+	for (int32 SlotIndex = 0; SlotIndex < TraySize; ++SlotIndex)
+	{
+		if (!TraySlotUsed[SlotIndex])
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+void AGridManager::PlaceFixedTile(int32 X, int32 Y, EPuzzleTileColor Color, EPuzzleDir Dir)
+{
+	if (!IsValidCoord(X, Y) || Filled[Y * GridWidth + X])
+	{
+		return;
+	}
+	const int32 Index = Y * GridWidth + X;
+	Filled[Index] = true;
+	CellColors[Index] = Color;
+	CellDirs[Index] = Dir;
+	CellBonus[Index] = 0;
+	if (APuzzleTile* Tile = SpawnTile(GetWorldLocationForCell(X, Y), Color, Dir, 1.f))
+	{
+		Tile->MoveToPosition(X, Y);
+		CellVisuals[Index] = Tile;
+	}
+}
+
+void AGridManager::PlaceFixedBonus(int32 X, int32 Y, EPuzzleBonus Kind)
+{
+	if (!IsValidCoord(X, Y) || Filled[Y * GridWidth + X])
+	{
+		return;
+	}
+	const int32 Index = Y * GridWidth + X;
+	Filled[Index] = true;
+	CellColors[Index] = EPuzzleTileColor::Red;
+	CellDirs[Index] = EPuzzleDir::Up;
+	CellBonus[Index] = static_cast<uint8>(Kind);
+	if (APuzzleTile* Tile = SpawnTile(GetWorldLocationForCell(X, Y), EPuzzleTileColor::Red, EPuzzleDir::Up, 1.f))
+	{
+		Tile->SetBonus(Kind);
+		Tile->MoveToPosition(X, Y);
+		CellVisuals[Index] = Tile;
 	}
 }
 

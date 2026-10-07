@@ -572,15 +572,18 @@ void UPuzzleHUDWidget::BuildCardContent(EPuzzleCard Card)
 		Add(MakeText(FString::Printf(TEXT("course  %dx%d"), Board ? Board->GridWidth : 8, Board ? Board->GridHeight : 8), false, 30.f, Cyan, 3.f), 6.f);
 		const int32 Best = Save ? Save->BestScore : 0;
 		Add(MakeText(Best > 0 ? FString::Printf(TEXT("best  %d"), Best) : TEXT("no best yet"), false, 30.f, PaleGold, 3.f), 2.f);
-		if (GameMode && GameMode->HasArcade())
+		float NextTop = 22.f;
+		if (GameMode && GameMode->HasCampaign(0))
 		{
-			Add(Btn(TEXT("ARCADE"), FVector2D(520.f, 100.f), Emerald, Emerald2, ActArcade), 22.f);
-			Add(Btn(TEXT("SELECT COURSE"), FVector2D(520.f, 100.f), Amethyst, Amethyst2, ActCourses), 14.f);
+			Add(Btn(TEXT("ARCADE"), FVector2D(520.f, 100.f), Emerald, Emerald2, ActArcade, 0), NextTop);
+			NextTop = 14.f;
 		}
-		else
+		if (GameMode && GameMode->HasCampaign(1))
 		{
-			Add(Btn(TEXT("SELECT COURSE"), FVector2D(520.f, 100.f), Amethyst, Amethyst2, ActCourses), 22.f);
+			Add(Btn(TEXT("TUTORIAL"), FVector2D(520.f, 100.f), Emerald, Emerald2, ActArcade, 1), NextTop);
+			NextTop = 14.f;
 		}
+		Add(Btn(TEXT("SELECT COURSE"), FVector2D(520.f, 100.f), Amethyst, Amethyst2, ActCourses), NextTop);
 		Add(Btn(TEXT("PLAY OPTIONS"), FVector2D(520.f, 100.f), Amethyst, Amethyst2, ActOptions), 14.f);
 		Add(Btn(TEXT("DEMO"), FVector2D(520.f, 100.f), Amethyst, Amethyst2, ActStartDemo), 14.f);
 		Add(Btn(TEXT("HOW TO PLAY"), FVector2D(520.f, 100.f), Amethyst, Amethyst2, ActHowTo), 14.f);
@@ -679,13 +682,14 @@ void UPuzzleHUDWidget::BuildCardContent(EPuzzleCard Card)
 	{
 		const int32 Progress = GameMode ? GameMode->GetArcadeProgress() : 0;
 		const int32 Count = GameMode ? GameMode->GetArcadeCount() : 0;
-		const UArcadeCampaign* Camp = GameMode ? GameMode->GetArcadeCampaign() : nullptr;
-		Add(MakeText(TEXT("Arcade"), true, 84.f, Gold, 6.f));
-		if (Camp && !Camp->CampaignName.IsEmpty() && Camp->CampaignName != TEXT("Arcade"))
+		const FArcadeCampaign* Camp = GameMode ? GameMode->GetArcadeCampaign() : nullptr;
+		const bool bTutorial = GameMode && GameMode->GetCampaignKind() == 1;
+		Add(MakeText(bTutorial ? TEXT("Tutorial") : TEXT("Arcade"), true, 84.f, Gold, 6.f));
+		if (Camp && !Camp->CampaignName.IsEmpty() && Camp->CampaignName != TEXT("Arcade") && Camp->CampaignName != TEXT("Tutorial"))
 		{
 			Add(MakeText(Camp->CampaignName, false, 32.f, Lavender, 3.f), 4.f);
 		}
-		Add(MakeText(FString::Printf(TEXT("%d of %d challenges beaten"), Progress, Count), false, 30.f, Cyan, 3.f), 12.f);
+		Add(MakeText(FString::Printf(TEXT("%d of %d %s beaten"), Progress, Count, bTutorial ? TEXT("steps") : TEXT("challenges")), false, 30.f, Cyan, 3.f), 12.f);
 		if (Progress < Count)
 		{
 			Add(Btn(FString::Printf(TEXT("CONTINUE  %d"), Progress + 1), FVector2D(560.f, 136.f), Emerald, Emerald2, ActArcadeStart, Progress), 36.f);
@@ -704,7 +708,8 @@ void UPuzzleHUDWidget::BuildCardContent(EPuzzleCard Card)
 	case EPuzzleCard::ArcadeDone:
 	{
 		const FArcadeChallenge* Challenge = GameMode ? GameMode->GetArcadeChallenge() : nullptr;
-		const UArcadeCampaign* Camp = GameMode ? GameMode->GetArcadeCampaign() : nullptr;
+		const FArcadeCampaign* Camp = GameMode ? GameMode->GetArcadeCampaign() : nullptr;
+		const bool bTutorial = GameMode && GameMode->GetCampaignKind() == 1;
 		const int32 Index = GameMode ? GameMode->GetArcadeIndex() : 0;
 		const int32 Count = GameMode ? GameMode->GetArcadeCount() : 0;
 		auto Body = [&](const FString& Text, float Size, const FLinearColor& Color, float Top)
@@ -715,7 +720,7 @@ void UPuzzleHUDWidget::BuildCardContent(EPuzzleCard Card)
 		};
 		if (Card == EPuzzleCard::ArcadeDone)
 		{
-			Add(MakeText(TEXT("Arcade"), true, 72.f, Gold, 6.f));
+			Add(MakeText(bTutorial ? TEXT("Tutorial") : TEXT("Arcade"), true, 72.f, Gold, 6.f));
 			Add(MakeText(TEXT("COMPLETE"), true, 72.f, Gold, 6.f), -6.f);
 			if (Camp && !Camp->FinaleText.IsEmpty())
 			{
@@ -727,7 +732,7 @@ void UPuzzleHUDWidget::BuildCardContent(EPuzzleCard Card)
 		const FString Title = Challenge ? Challenge->Title : FString();
 		if (Card == EPuzzleCard::ArcadeIntro)
 		{
-			Add(MakeText(FString::Printf(TEXT("CHALLENGE  %d / %d"), Index + 1, Count), false, 28.f, Lavender, 3.f));
+			Add(MakeText(FString::Printf(TEXT("%s  %d / %d"), bTutorial ? TEXT("STEP") : TEXT("CHALLENGE"), Index + 1, Count), false, 28.f, Lavender, 3.f));
 			Add(MakeText(Title, true, Title.Len() > 14 ? 52.f : 68.f, Gold, 6.f), 6.f);
 			if (Challenge)
 			{
@@ -739,13 +744,26 @@ void UPuzzleHUDWidget::BuildCardContent(EPuzzleCard Card)
 				if (Challenge->bOutgoingBottle) { Bonus.Add(TEXT("full potion")); }
 				if (Challenge->bIncomingBottle) { Bonus.Add(TEXT("empty potion")); }
 				const int32 Seconds = Challenge->TimeLimitSeconds;
-				FString RulesText = FString::Printf(TEXT("Reach  %d  points\n%s\nBoard  %dx%d\nRelics:  %s\nBonus tiles:  %s"),
-					Challenge->TargetScore,
-					Seconds > 0 ? *FString::Printf(TEXT("Time limit  %d:%02d"), Seconds / 60, Seconds % 60) : TEXT("No time limit"),
-					Challenge->GridWidth, Challenge->GridHeight,
-					Relics.Num() > 0 ? *FString::Join(Relics, TEXT(", ")) : TEXT("none"),
-					Bonus.Num() > 0 ? *FString::Join(Bonus, TEXT(", ")) : TEXT("none"));
-				Body(RulesText, 30.f, Cyan, 22.f);
+				TArray<FString> RuleLines;
+				if (Challenge->TargetScore > 0)
+				{
+					RuleLines.Add(FString::Printf(TEXT("Reach  %d  points"), Challenge->TargetScore));
+				}
+				if (Challenge->GoalRoutes > 0)
+				{
+					RuleLines.Add(FString::Printf(TEXT("Clear  %d  route%s"), Challenge->GoalRoutes, Challenge->GoalRoutes == 1 ? TEXT("") : TEXT("s")));
+				}
+				RuleLines.Add(Seconds > 0 ? FString::Printf(TEXT("Time limit  %d:%02d"), Seconds / 60, Seconds % 60) : FString(TEXT("No time limit")));
+				RuleLines.Add(FString::Printf(TEXT("Board  %dx%d"), Challenge->GridWidth, Challenge->GridHeight));
+				if (Relics.Num() > 0)
+				{
+					RuleLines.Add(FString::Printf(TEXT("Relics:  %s"), *FString::Join(Relics, TEXT(", "))));
+				}
+				if (Bonus.Num() > 0)
+				{
+					RuleLines.Add(FString::Printf(TEXT("Bonus tiles:  %s"), *FString::Join(Bonus, TEXT(", "))));
+				}
+				Body(FString::Join(RuleLines, TEXT("\n")), 30.f, Cyan, 22.f);
 				if (!Challenge->IntroText.IsEmpty())
 				{
 					Body(Challenge->IntroText, 30.f, FLinearColor(0.9f, 0.86f, 1.f), 26.f);
@@ -849,7 +867,7 @@ void UPuzzleHUDWidget::HandleAction(int32 Action, int32 Param)
 	case ActResume:  GameMode->ClosePauseMenu(); break;
 	case ActTakeOver: GameMode->TakeOver(); break;
 	case ActStartDemo: GameMode->StartDemo(); break;
-	case ActArcade:      GameMode->OpenArcade(); break;
+	case ActArcade:      GameMode->OpenCampaign(Param); break;
 	case ActArcadeStart: GameMode->StartArcade(Param); break;
 	case ActArcadeBegin: GameMode->BeginArcadeChallenge(); break;
 	case ActArcadeNext:  GameMode->ArcadeAdvance(); break;
@@ -1369,7 +1387,15 @@ void UPuzzleHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime
 	else if (GameMode->IsArcade() && GameMode->GetArcadeState() == EArcadeState::Playing && GameMode->GetArcadeChallenge())
 	{
 		const FArcadeChallenge* Challenge = GameMode->GetArcadeChallenge();
-		Hint = FString::Printf(TEXT("%d/%d  %s\nGOAL  %d / %d"), GameMode->GetArcadeIndex() + 1, GameMode->GetArcadeCount(), *Challenge->Title, Rules->Score, Challenge->TargetScore);
+		Hint = FString::Printf(TEXT("%d/%d  %s"), GameMode->GetArcadeIndex() + 1, GameMode->GetArcadeCount(), *Challenge->Title);
+		if (Challenge->TargetScore > 0)
+		{
+			Hint += FString::Printf(TEXT("\nGOAL  %d / %d"), Rules->Score, Challenge->TargetScore);
+		}
+		if (Challenge->GoalRoutes > 0)
+		{
+			Hint += FString::Printf(TEXT("\nROUTES  %d / %d"), FMath::Min(Rules->RoutesCleared, Challenge->GoalRoutes), Challenge->GoalRoutes);
+		}
 		HintColor = PaleGold;
 		if (Challenge->TimeLimitSeconds > 0)
 		{

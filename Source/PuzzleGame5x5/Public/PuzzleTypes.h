@@ -84,6 +84,9 @@ struct FPuzzlePieceShape
 	}
 };
 
+// What a curated tray (a campaign step) deals after its last bucket: random pieces, the buckets again, or nothing.
+enum class ECampaignTrayAfter : uint8 { Random, Loop, End };
+
 namespace PuzzleTypes
 {
 	// The colour of a bonus kind's effects and popups: pumpkin orange, potion magenta.

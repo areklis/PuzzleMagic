@@ -23,6 +23,7 @@ void UPuzzleManager::ConfigureItems(bool bHolyLight, bool bReroll, bool bPumpkin
 void UPuzzleManager::StartGame()
 {
 	Score = 0;
+	RoutesCleared = 0;
 	ComboStreak = 0;
 	ComboWindow = 0;
 	LastRoundScore = 0;
@@ -68,6 +69,7 @@ bool UPuzzleManager::TryPlacePiece(int32 TraySlot, int32 OriginX, int32 OriginY)
 	// Placing a piece scores nothing; only clears do.
 	int32 RoundScore = 0;
 	LastBonusMoves = 0;
+	RoutesCleared += Result.Lines;
 	if (Result.Lines > 0)
 	{
 		// Multi-line clears push the combo up faster; any clear refills the window.

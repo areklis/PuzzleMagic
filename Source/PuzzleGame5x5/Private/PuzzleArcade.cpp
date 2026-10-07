@@ -1,49 +1,65 @@
-// The arcade side of APuzzleGameMode: a campaign of sequential challenges (a UArcadeCampaign data asset). A challenge
-// sets the board size, the relics and the bonus tiles, shows an intro popup, runs the clock, and ends with an outro
-// popup when the goal score is reached, or a fail popup when time runs out or no piece fits.
+// The campaign side of APuzzleGameMode: the arcade (challenges of escalating difficulty) and the tutorial (a step-by-step
+// lesson), both read from JSON files made with the standalone campaign editor. A step sets the board size, the relics and
+// the bonus tiles, can put tiles on the board and deal the player a fixed set of pieces, shows an intro popup, runs the
+// clock, and ends with an outro popup when its goals are met, or a fail popup when time runs out or no piece fits.
 #include "PuzzleGameMode.h"
-#include "ArcadeCampaign.h"
+#include "CampaignData.h"
 #include "GridManager.h"
 #include "PuzzleManager.h"
 #include "PuzzleHUDWidget.h"
 #include "PuzzleInputHandler.h"
 #include "PuzzleSaveGame.h"
 
+namespace
+{
+	const TCHAR* KindFileName[2] = { TEXT("arcade"), TEXT("tutorial") };
+}
+
 void APuzzleGameMode::LoadCampaign()
 {
-	if (!Campaign)
+	for (int32 Kind = 0; Kind < 2; ++Kind)
 	{
-		Campaign = Cast<UArcadeCampaign>(StaticLoadObject(UArcadeCampaign::StaticClass(), nullptr, TEXT("/Game/Arcade/DA_ArcadeCampaign.DA_ArcadeCampaign"), nullptr, LOAD_NoWarn | LOAD_Quiet));
+		if (!Campaigns[Kind].IsValid())
+		{
+			Campaigns[Kind] = FArcadeCampaign::Load(KindFileName[Kind]);
+		}
 	}
 }
 
-bool APuzzleGameMode::HasArcade() const
+bool APuzzleGameMode::HasCampaign(int32 Kind) const
 {
-	return Campaign && Campaign->Challenges.Num() > 0;
+	return Kind >= 0 && Kind < 2 && Campaigns[Kind].IsValid() && Campaigns[Kind]->Challenges.Num() > 0;
 }
 
 int32 APuzzleGameMode::GetArcadeCount() const
 {
+	const FArcadeCampaign* Campaign = GetArcadeCampaign();
 	return Campaign ? Campaign->Challenges.Num() : 0;
 }
 
 const FArcadeChallenge* APuzzleGameMode::GetArcadeChallenge() const
 {
+	const FArcadeCampaign* Campaign = GetArcadeCampaign();
 	return (Campaign && Campaign->Challenges.IsValidIndex(ArcadeIndex)) ? &Campaign->Challenges[ArcadeIndex] : nullptr;
 }
 
 int32 APuzzleGameMode::GetArcadeProgress() const
 {
-	return SaveGame ? FMath::Clamp(SaveGame->ArcadeProgress, 0, GetArcadeCount()) : 0;
+	if (!SaveGame)
+	{
+		return 0;
+	}
+	return FMath::Clamp(ActiveKind == 0 ? SaveGame->ArcadeProgress : SaveGame->TutorialProgress, 0, GetArcadeCount());
 }
 
-void APuzzleGameMode::OpenArcade()
+void APuzzleGameMode::OpenCampaign(int32 Kind)
 {
-	if (!HasArcade())
+	if (!HasCampaign(Kind))
 	{
 		return;
 	}
-	// With nothing beaten yet it goes straight to the first challenge; otherwise it offers to continue.
+	ActiveKind = Kind;
+	// With nothing beaten yet it goes straight to the first step; otherwise it offers to continue.
 	if (GetArcadeProgress() == 0)
 	{
 		StartArcade(0);
@@ -56,7 +72,7 @@ void APuzzleGameMode::OpenArcade()
 
 void APuzzleGameMode::StartArcade(int32 FromIndex)
 {
-	if (!HasArcade() || !PuzzleManager || !GridManager)
+	if (!HasCampaign(ActiveKind) || !PuzzleManager || !GridManager)
 	{
 		return;
 	}
@@ -76,13 +92,26 @@ void APuzzleGameMode::PrepareArcadeChallenge(bool bShowIntro)
 	PuzzleManager->ConfigureItems(Challenge->bHolyLight, Challenge->bReroll, Challenge->bPumpkin, Challenge->bOutgoingBottle, Challenge->bIncomingBottle);
 	GridManager->SetGridSize(Challenge->GridWidth, Challenge->GridHeight);
 	ReframeCamera();
+	// A fixed tray (or none: random pieces), then the board with its starting tiles.
+	GridManager->SetCuratedTray(Challenge->Buckets, Challenge->TrayAfter);
 	StartRound();
+	for (const FArcadeTile& Tile : Challenge->Board)
+	{
+		if (Tile.Bonus != EPuzzleBonus::None)
+		{
+			GridManager->PlaceFixedBonus(Tile.X, Tile.Y, Tile.Bonus);
+		}
+		else
+		{
+			GridManager->PlaceFixedTile(Tile.X, Tile.Y, Tile.Color, Tile.Dir);
+		}
+	}
 
 	ArcadeTimeLeft = static_cast<float>(Challenge->TimeLimitSeconds);
 	ArcadeFailReason.Reset();
 	if (bShowIntro)
 	{
-		// The empty board waits behind the popup; the clock starts with the START button.
+		// The board waits behind the popup; the clock starts with the START button.
 		ArcadeState = EArcadeState::Intro;
 		Flow = EPuzzleFlow::Menu;
 		if (UPuzzleHUDWidget* UI = GetUI())
@@ -150,6 +179,10 @@ void APuzzleGameMode::LeaveArcade()
 	}
 	bArcade = false;
 	ArcadeState = EArcadeState::None;
+	if (GridManager)
+	{
+		GridManager->ClearCuratedTray();
+	}
 	// Back to the options and board size the player picked in the menus.
 	if (SaveGame && PuzzleManager)
 	{
@@ -167,7 +200,13 @@ void APuzzleGameMode::LeaveArcade()
 void APuzzleGameMode::CheckArcadeWin()
 {
 	const FArcadeChallenge* Challenge = GetArcadeChallenge();
-	if (!bArcade || ArcadeState != EArcadeState::Playing || !Challenge || !PuzzleManager || PuzzleManager->Score < Challenge->TargetScore)
+	if (!bArcade || ArcadeState != EArcadeState::Playing || !Challenge || !PuzzleManager)
+	{
+		return;
+	}
+	// Every goal that is set must be met.
+	if ((Challenge->TargetScore > 0 && PuzzleManager->Score < Challenge->TargetScore)
+		|| (Challenge->GoalRoutes > 0 && PuzzleManager->RoutesCleared < Challenge->GoalRoutes))
 	{
 		return;
 	}
@@ -177,10 +216,14 @@ void APuzzleGameMode::CheckArcadeWin()
 	{
 		InputHandler->CancelInteraction();
 	}
-	if (SaveGame && SaveGame->ArcadeProgress < ArcadeIndex + 1)
+	if (SaveGame)
 	{
-		SaveGame->ArcadeProgress = ArcadeIndex + 1;
-		SaveGame->Save();
+		int32& Progress = ActiveKind == 0 ? SaveGame->ArcadeProgress : SaveGame->TutorialProgress;
+		if (Progress < ArcadeIndex + 1)
+		{
+			Progress = ArcadeIndex + 1;
+			SaveGame->Save();
+		}
 	}
 	Later(AGridManager::ArriveDuration + 1.6f, [this]()
 	{
@@ -232,7 +275,8 @@ void APuzzleGameMode::PuzzleArcadeTest(const FString& What)
 	}
 	if (What == TEXT("win"))
 	{
-		PuzzleManager->Score = Challenge->TargetScore;
+		PuzzleManager->Score = FMath::Max(PuzzleManager->Score, Challenge->TargetScore);
+		PuzzleManager->RoutesCleared = FMath::Max(PuzzleManager->RoutesCleared, Challenge->GoalRoutes);
 		CheckArcadeWin();
 	}
 	else if (What == TEXT("fail"))

@@ -35,9 +35,12 @@ public:
 	UPROPERTY()
 	float SfxVolume = 0.8f;
 
-	// Arcade: how many challenges of the campaign are beaten in a row.
+	// Arcade and tutorial: how many steps of the campaign are beaten in a row.
 	UPROPERTY()
 	int32 ArcadeProgress = 0;
+
+	UPROPERTY()
+	int32 TutorialProgress = 0;
 
 	// The "How to play" pages open by themselves on the very first launch only.
 	UPROPERTY()

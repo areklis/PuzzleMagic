@@ -137,9 +137,26 @@ public:
 	UPROPERTY()
 	TArray<bool> TraySlotUsed;
 
+private:
+	TArray<TArray<FPuzzlePieceShape>> CuratedBuckets;
+	int32 NextBucket = 0;
+	ECampaignTrayAfter CuratedAfter = ECampaignTrayAfter::Random;
+public:
+
 	void RefillTrayIfEmpty();
 	void ConsumeTraySlot(int32 SlotIndex);
 	void RerollTray();
+
+	// Curated tray (campaign steps): the player is dealt these buckets of pieces in order instead of random ones. Call it
+	// before InitBoard. Empty buckets mean random pieces.
+	void SetCuratedTray(const TArray<TArray<FPuzzlePieceShape>>& Buckets, ECampaignTrayAfter After);
+	void ClearCuratedTray();
+	// True when the curated pieces have all been dealt, the tray is bare and the tray does not start over.
+	bool IsOutOfCuratedPieces() const;
+
+	// Campaign boards: tiles that are on the board when a step starts (call after InitBoard).
+	void PlaceFixedTile(int32 X, int32 Y, EPuzzleTileColor Color, EPuzzleDir Dir);
+	void PlaceFixedBonus(int32 X, int32 Y, EPuzzleBonus Kind);
 
 	// Moves a regular tray piece into the reserve (swapping if the reserve is occupied).
 	bool ParkPiece(int32 SlotIndex);

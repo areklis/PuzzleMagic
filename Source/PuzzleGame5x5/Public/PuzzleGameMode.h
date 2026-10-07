@@ -3,7 +3,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
 #include "PuzzleTypes.h"
-#include "ArcadeCampaign.h"
+#include "CampaignData.h"
 #include "PuzzleGameMode.generated.h"
 
 class AGridManager;
@@ -76,25 +76,27 @@ public:
 	// The play options. Relics means combo, relics and luck together.
 	void SetOptions(bool bRelics, bool bBonusTiles);
 
-	// --- Arcade: a campaign of sequential challenges, the UArcadeCampaign data asset /Game/Arcade/DA_ArcadeCampaign ---
-	bool HasArcade() const;
-	bool IsArcade() const { return bArcade; }
+	// --- Campaigns: the arcade (challenges of escalating difficulty) and the tutorial (a step-by-step lesson), read from
+	// arcade.json and tutorial.json (see FArcadeCampaign). Kind 0 is the arcade, 1 the tutorial. A "challenge" below is a step. ---
+	bool HasCampaign(int32 Kind) const;
+	bool IsArcade() const { return bArcade; } // inside a campaign
+	int32 GetCampaignKind() const { return ActiveKind; }
 	EArcadeState GetArcadeState() const { return ArcadeState; }
-	const FArcadeChallenge* GetArcadeChallenge() const; // the one being played, null outside the arcade
+	const FArcadeChallenge* GetArcadeChallenge() const; // the step being played, null outside a campaign
 	int32 GetArcadeIndex() const { return ArcadeIndex; }
 	int32 GetArcadeCount() const;
-	int32 GetArcadeProgress() const; // challenges beaten in a row, saved
+	int32 GetArcadeProgress() const; // steps beaten in a row, saved
 	float GetArcadeTimeLeft() const { return ArcadeTimeLeft; }
-	const UArcadeCampaign* GetArcadeCampaign() const { return Campaign; }
+	const FArcadeCampaign* GetArcadeCampaign() const { return Campaigns[ActiveKind].Get(); }
 	FString ArcadeFailReason;
-	// From the main menu: offers to continue, or goes straight to the first challenge when nothing is beaten yet.
-	void OpenArcade();
+	// From the main menu: offers to continue, or goes straight to the first step when nothing is beaten yet.
+	void OpenCampaign(int32 Kind);
 	void StartArcade(int32 FromIndex);
 	void BeginArcadeChallenge(); // the START button of the intro popup: starts the clock
 	void ArcadeAdvance();        // the NEXT button of the outro popup
 	void ArcadeRetry();          // the RETRY button of the fail popup
 
-	// Console command for trying a challenge's popups without playing it: PuzzleArcadeTest win | fail | time (5 seconds left).
+	// Console command for trying a step's popups without playing it: PuzzleArcadeTest win | fail | time (5 seconds left).
 	UFUNCTION(Exec)
 	void PuzzleArcadeTest(const FString& What);
 
@@ -193,8 +195,8 @@ protected:
 	void CheckArcadeWin();
 	void FailArcade(const FString& Reason);
 
-	UPROPERTY()
-	TObjectPtr<UArcadeCampaign> Campaign;
+	TSharedPtr<FArcadeCampaign> Campaigns[2];
+	int32 ActiveKind = 0;
 	bool bArcade = false;
 	int32 ArcadeIndex = 0;
 	EArcadeState ArcadeState = EArcadeState::None;
