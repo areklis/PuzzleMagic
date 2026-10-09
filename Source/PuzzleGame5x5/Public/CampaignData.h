@@ -32,6 +32,7 @@ struct FArcadeChallenge
 	// The step is won when every goal that is set is met. At least one is set.
 	int32 TargetScore = 0;  // reach this score (0: no score goal)
 	int32 GoalRoutes = 0;   // clear this many routes (0: no route goal)
+	bool bClearBuckets = false; // use up every preset bucket (the tray then ends after the last one)
 
 	int32 TimeLimitSeconds = 0; // 0 is no time limit
 	int32 GridWidth = 8;
@@ -42,6 +43,9 @@ struct FArcadeChallenge
 	bool bPumpkin = false;
 	bool bOutgoingBottle = false; // the full potion
 	bool bIncomingBottle = false; // the empty potion
+	bool bHoldSlot = true;        // false takes the hold slot away
+	int32 HolyLightCharges = 1;   // charges the player starts with (0 to 3)
+	int32 RerollCharges = 1;
 
 	FString IntroText; // the popup before the step
 	FString OutroText; // the popup after it
@@ -54,6 +58,10 @@ struct FArcadeChallenge
 	// to three pieces (the tray's slots). After the last bucket the tray deals random pieces, starts over, or ends.
 	TArray<TArray<FPuzzlePieceShape>> Buckets;
 	ECampaignTrayAfter TrayAfter = ECampaignTrayAfter::Random;
+
+	// The pieces each Reroll deals, in order (empty: random pieces). After the last one: start over (Loop) or random.
+	TArray<TArray<FPuzzlePieceShape>> RerollBuckets;
+	ECampaignTrayAfter RerollAfter = ECampaignTrayAfter::Random;
 };
 
 // A campaign: arcade.json (challenges of escalating difficulty) or tutorial.json (a step-by-step lesson), made with the

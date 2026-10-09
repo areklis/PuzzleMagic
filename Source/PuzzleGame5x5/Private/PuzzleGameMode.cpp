@@ -631,6 +631,8 @@ void APuzzleGameMode::HandleBonusSpawned(FIntPoint Cell)
 
 void APuzzleGameMode::HandleFinished()
 {
+	// Using up the last preset piece ends the round: that is a win when the step's other goals are met.
+	CheckArcadeWin();
 	if (bArcade && ArcadeState != EArcadeState::Playing)
 	{
 		return; // already won or failed

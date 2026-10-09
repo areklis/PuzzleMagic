@@ -89,11 +89,12 @@ void APuzzleGameMode::PrepareArcadeChallenge(bool bShowIntro)
 	{
 		return;
 	}
-	PuzzleManager->ConfigureItems(Challenge->bHolyLight, Challenge->bReroll, Challenge->bPumpkin, Challenge->bOutgoingBottle, Challenge->bIncomingBottle);
-	GridManager->SetGridSize(Challenge->GridWidth, Challenge->GridHeight);
+	PuzzleManager->ConfigureItems(Challenge->bHolyLight, Challenge->bReroll, Challenge->bPumpkin, Challenge->bOutgoingBottle, Challenge->bIncomingBottle, Challenge->HolyLightCharges, Challenge->RerollCharges);
+	GridManager->bHoldEnabled = Challenge->bHoldSlot;
+	GridManager->SetGridSize(Challenge->GridWidth, Challenge->GridHeight); // also rebuilds the tray panels
 	ReframeCamera();
 	// A fixed tray (or none: random pieces), then the board with its starting tiles.
-	GridManager->SetCuratedTray(Challenge->Buckets, Challenge->TrayAfter);
+	GridManager->SetCuratedTray(Challenge->Buckets, Challenge->TrayAfter, Challenge->RerollBuckets, Challenge->RerollAfter);
 	StartRound();
 	for (const FArcadeTile& Tile : Challenge->Board)
 	{
@@ -190,6 +191,7 @@ void APuzzleGameMode::LeaveArcade()
 		PuzzleManager->SetBonusTilesEnabled(SaveGame->bOptionBonusTiles);
 		if (GridManager)
 		{
+			GridManager->bHoldEnabled = true;
 			GridManager->SetGridSize(SaveGame->CourseWidth, SaveGame->CourseHeight);
 			ReframeCamera();
 		}
@@ -206,7 +208,8 @@ void APuzzleGameMode::CheckArcadeWin()
 	}
 	// Every goal that is set must be met.
 	if ((Challenge->TargetScore > 0 && PuzzleManager->Score < Challenge->TargetScore)
-		|| (Challenge->GoalRoutes > 0 && PuzzleManager->RoutesCleared < Challenge->GoalRoutes))
+		|| (Challenge->GoalRoutes > 0 && PuzzleManager->RoutesCleared < Challenge->GoalRoutes)
+		|| (Challenge->bClearBuckets && !(GridManager && GridManager->IsOutOfCuratedPieces())))
 	{
 		return;
 	}

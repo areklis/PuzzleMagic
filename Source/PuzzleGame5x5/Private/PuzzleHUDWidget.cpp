@@ -738,8 +738,8 @@ void UPuzzleHUDWidget::BuildCardContent(EPuzzleCard Card)
 			{
 				// The rules in a few lines: goal, clock, board, relics and bonus tiles.
 				TArray<FString> Relics, Bonus;
-				if (Challenge->bHolyLight) { Relics.Add(TEXT("Holy Light")); }
-				if (Challenge->bReroll) { Relics.Add(TEXT("Reroll")); }
+				if (Challenge->bHolyLight) { Relics.Add(FString::Printf(TEXT("Holy Light x%d"), Challenge->HolyLightCharges)); }
+				if (Challenge->bReroll) { Relics.Add(FString::Printf(TEXT("Reroll x%d"), Challenge->RerollCharges)); }
 				if (Challenge->bPumpkin) { Bonus.Add(TEXT("pumpkin")); }
 				if (Challenge->bOutgoingBottle) { Bonus.Add(TEXT("full potion")); }
 				if (Challenge->bIncomingBottle) { Bonus.Add(TEXT("empty potion")); }
@@ -753,8 +753,16 @@ void UPuzzleHUDWidget::BuildCardContent(EPuzzleCard Card)
 				{
 					RuleLines.Add(FString::Printf(TEXT("Clear  %d  route%s"), Challenge->GoalRoutes, Challenge->GoalRoutes == 1 ? TEXT("") : TEXT("s")));
 				}
+				if (Challenge->bClearBuckets)
+				{
+					RuleLines.Add(TEXT("Use every piece you are dealt"));
+				}
 				RuleLines.Add(Seconds > 0 ? FString::Printf(TEXT("Time limit  %d:%02d"), Seconds / 60, Seconds % 60) : FString(TEXT("No time limit")));
 				RuleLines.Add(FString::Printf(TEXT("Board  %dx%d"), Challenge->GridWidth, Challenge->GridHeight));
+				if (!Challenge->bHoldSlot)
+				{
+					RuleLines.Add(TEXT("No hold slot"));
+				}
 				if (Relics.Num() > 0)
 				{
 					RuleLines.Add(FString::Printf(TEXT("Relics:  %s"), *FString::Join(Relics, TEXT(", "))));
@@ -1417,7 +1425,7 @@ void UPuzzleHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime
 	// HOLD label under the reserve slot.
 	APlayerController* PC = GetOwningPlayer();
 	FVector2D HoldPosition;
-	if (GameMode->GridManager && PC && bPlayingView
+	if (GameMode->GridManager && GameMode->GridManager->bHoldEnabled && PC && bPlayingView
 		&& UWidgetLayoutLibrary::ProjectWorldLocationToWidgetPosition(PC, GameMode->GridManager->GetTrayAnchorWorldLocation(AGridManager::ReserveSlot) + FVector(0.f, 100.f, 0.f), HoldPosition, true))
 	{
 		HoldLabel->SetVisibility(ESlateVisibility::HitTestInvisible);

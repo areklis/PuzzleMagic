@@ -6,8 +6,10 @@ void UPuzzleManager::BindToGrid(AGridManager* InGridManager)
 	GridManager = InGridManager;
 }
 
-void UPuzzleManager::ConfigureItems(bool bHolyLight, bool bReroll, bool bPumpkin, bool bOutgoingBottle, bool bIncomingBottle)
+void UPuzzleManager::ConfigureItems(bool bHolyLight, bool bReroll, bool bPumpkin, bool bOutgoingBottle, bool bIncomingBottle, int32 HolyLightCharges, int32 RerollCharges)
 {
+	StartHolyLightCharges = FMath::Clamp(HolyLightCharges, 0, MaxRelicCharges);
+	StartRerollCharges = FMath::Clamp(RerollCharges, 0, MaxRelicCharges);
 	const bool bAnyRelic = bHolyLight || bReroll;
 	bComboEnabled = bAnyRelic;
 	bRelicsEnabled = bAnyRelic;
@@ -31,9 +33,9 @@ void UPuzzleManager::StartGame()
 	MovesLeft = StartingMoves;
 	MovesMade = 0;
 	LastBonusMoves = 0;
-	// One of each to start, so the relic buttons are learnable from the first move.
-	RelicCharges[0] = IsRelicEnabled(ERelic::HolyLight) ? 1 : 0;
-	RelicCharges[1] = IsRelicEnabled(ERelic::Reroll) ? 1 : 0;
+	// One of each to start by default, so the relic buttons are learnable from the first move.
+	RelicCharges[0] = IsRelicEnabled(ERelic::HolyLight) ? StartHolyLightCharges : 0;
+	RelicCharges[1] = IsRelicEnabled(ERelic::Reroll) ? StartRerollCharges : 0;
 	NextRelicCombo = RelicComboStep;
 	NextRelic = ERelic::HolyLight;
 	bFinished = false;
@@ -313,6 +315,11 @@ bool UPuzzleManager::IsGameOver() const
 		return false;
 	}
 	if (IsOutOfMoves())
+	{
+		return true;
+	}
+	// The campaign's fixed pieces are all used: nothing is left to play, whatever relics remain.
+	if (GridManager->IsOutOfCuratedPieces())
 	{
 		return true;
 	}

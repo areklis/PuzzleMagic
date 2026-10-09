@@ -90,12 +90,48 @@ namespace
 		return true;
 	}
 
+	// [[piece, ...], ...]: buckets of up to three pieces; empty buckets are dropped (they would leave the tray bare).
+	void ParseBuckets(const TSharedPtr<FJsonObject>& Tray, const TCHAR* Key, TArray<TArray<FPuzzlePieceShape>>& Out)
+	{
+		const TArray<TSharedPtr<FJsonValue>>* Buckets = nullptr;
+		if (!Tray->TryGetArrayField(Key, Buckets))
+		{
+			return;
+		}
+		for (const TSharedPtr<FJsonValue>& BucketValue : *Buckets)
+		{
+			const TArray<TSharedPtr<FJsonValue>>* Pieces = nullptr;
+			if (!BucketValue->TryGetArray(Pieces))
+			{
+				continue;
+			}
+			TArray<FPuzzlePieceShape> Bucket;
+			for (const TSharedPtr<FJsonValue>& PieceValue : *Pieces)
+			{
+				const TSharedPtr<FJsonObject>* PieceObject = nullptr;
+				FPuzzlePieceShape Piece;
+				if (PieceValue->TryGetObject(PieceObject) && ParsePiece(*PieceObject, Piece) && Bucket.Num() < 3)
+				{
+					Bucket.Add(Piece);
+				}
+			}
+			if (Bucket.Num() > 0)
+			{
+				Out.Add(MoveTemp(Bucket));
+			}
+		}
+	}
+
 	void ParseStep(const TSharedPtr<FJsonObject>& Object, FArcadeChallenge& Step)
 	{
 		Step.Title = GetString(Object, TEXT("title"));
 		Step.TargetScore = FMath::Max(0, GetInt(Object, TEXT("goal"), 0));
 		Step.GoalRoutes = FMath::Max(0, GetInt(Object, TEXT("goalRoutes"), 0));
-		if (Step.TargetScore == 0 && Step.GoalRoutes == 0)
+		bool bHold = true;
+		Object->TryGetBoolField(TEXT("holdSlot"), bHold);
+		Step.bHoldSlot = bHold;
+		Step.bClearBuckets = GetBool(Object, TEXT("goalBuckets")); // dropped below if there are no buckets to use up
+		if (Step.TargetScore == 0 && Step.GoalRoutes == 0 && !Step.bClearBuckets)
 		{
 			Step.TargetScore = 1; // a step needs a goal
 		}
@@ -116,6 +152,8 @@ namespace
 		{
 			Step.bHolyLight = GetBool(*Relics, TEXT("holyLight"));
 			Step.bReroll = GetBool(*Relics, TEXT("reroll"));
+			Step.HolyLightCharges = FMath::Clamp(GetInt(*Relics, TEXT("holyLightCharges"), 1), 0, 3);
+			Step.RerollCharges = FMath::Clamp(GetInt(*Relics, TEXT("rerollCharges"), 1), 0, 3);
 		}
 		const TSharedPtr<FJsonObject>* Bonus = nullptr;
 		if (Object->TryGetObjectField(TEXT("bonus"), Bonus))
@@ -153,32 +191,23 @@ namespace
 		{
 			const FString After = GetString(*Tray, TEXT("after"));
 			Step.TrayAfter = After == TEXT("loop") ? ECampaignTrayAfter::Loop : (After == TEXT("end") ? ECampaignTrayAfter::End : ECampaignTrayAfter::Random);
-			const TArray<TSharedPtr<FJsonValue>>* Buckets = nullptr;
-			if ((*Tray)->TryGetArrayField(TEXT("buckets"), Buckets))
+			ParseBuckets(*Tray, TEXT("buckets"), Step.Buckets);
+			ParseBuckets(*Tray, TEXT("rerollBuckets"), Step.RerollBuckets);
+			Step.RerollAfter = GetString(*Tray, TEXT("rerollAfter")) == TEXT("loop") ? ECampaignTrayAfter::Loop : ECampaignTrayAfter::Random;
+		}
+
+		// "Use up every bucket" needs preset buckets and a tray that ends after the last one.
+		if (Step.bClearBuckets && Step.Buckets.Num() == 0)
+		{
+			Step.bClearBuckets = false;
+			if (Step.TargetScore == 0 && Step.GoalRoutes == 0)
 			{
-				for (const TSharedPtr<FJsonValue>& BucketValue : *Buckets)
-				{
-					const TArray<TSharedPtr<FJsonValue>>* Pieces = nullptr;
-					if (!BucketValue->TryGetArray(Pieces))
-					{
-						continue;
-					}
-					TArray<FPuzzlePieceShape> Bucket;
-					for (const TSharedPtr<FJsonValue>& PieceValue : *Pieces)
-					{
-						const TSharedPtr<FJsonObject>* PieceObject = nullptr;
-						FPuzzlePieceShape Piece;
-						if (PieceValue->TryGetObject(PieceObject) && ParsePiece(*PieceObject, Piece) && Bucket.Num() < 3)
-						{
-							Bucket.Add(Piece);
-						}
-					}
-					if (Bucket.Num() > 0)
-					{
-						Step.Buckets.Add(MoveTemp(Bucket)); // an empty bucket would leave the tray bare
-					}
-				}
+				Step.TargetScore = 1;
 			}
+		}
+		if (Step.bClearBuckets)
+		{
+			Step.TrayAfter = ECampaignTrayAfter::End;
 		}
 	}
 }

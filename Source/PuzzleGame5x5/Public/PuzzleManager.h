@@ -32,7 +32,11 @@ public:
 	bool bComboEnabled = false;
 	bool bRelicsEnabled = false;
 	bool bLuckEnabled = false;
-	void SetExtrasEnabled(bool bOn) { bComboEnabled = bOn; bRelicsEnabled = bOn; bLuckEnabled = bOn; bHolyLightEnabled = true; bRerollEnabled = true; }
+	void SetExtrasEnabled(bool bOn) { bComboEnabled = bOn; bRelicsEnabled = bOn; bLuckEnabled = bOn; bHolyLightEnabled = true; bRerollEnabled = true; StartHolyLightCharges = 1; StartRerollCharges = 1; }
+
+	// Charges of each relic the player starts a round with (a campaign step can preset them; the default is one of each).
+	int32 StartHolyLightCharges = 1;
+	int32 StartRerollCharges = 1;
 
 	// Which relics are in play while relics are on: the Play options switch both together, an arcade challenge picks one by one.
 	bool bHolyLightEnabled = true;
@@ -50,7 +54,7 @@ public:
 
 	// An arcade challenge: relics and bonus tiles one by one. Either relic switches combos, relics and luck on
 	// (relics are earned through combos and paid for with luck); any bonus tile switches bonus tiles on.
-	void ConfigureItems(bool bHolyLight, bool bReroll, bool bPumpkin, bool bOutgoingBottle, bool bIncomingBottle);
+	void ConfigureItems(bool bHolyLight, bool bReroll, bool bPumpkin, bool bOutgoingBottle, bool bIncomingBottle, int32 HolyLightCharges = 1, int32 RerollCharges = 1);
 
 	// A combo breaks after this many placements in a row without a clear (so it survives one fewer).
 	static constexpr int32 ComboWindowMoves = 3;
