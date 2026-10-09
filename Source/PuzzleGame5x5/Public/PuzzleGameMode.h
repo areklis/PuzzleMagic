@@ -32,6 +32,7 @@ class PUZZLEGAME5X5_API APuzzleGameMode : public AGameModeBase
 public:
 	APuzzleGameMode();
 
+	virtual void InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage) override;
 	virtual void StartPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 
@@ -172,6 +173,14 @@ public:
 
 	// The volume sliders. They apply at once and are saved.
 	void SetMusicVolume(float Volume);
+
+	// Options card. Graphics Low is the lightweight scene (reloads the map, which builds the scenery once); Fullscreen
+	// switches between a borderless full-screen window and an ordinary window (PC only).
+	bool IsLowGraphics() const;
+	void SetLowGraphics(bool bLow);
+	bool IsFullscreen() const;
+	int32 LastWindowMode = -1; // 1 fullscreen, 0 windowed; Tick watches it, since Alt+Enter and F11 change it too
+	void SetFullscreen(bool bFullscreen);
 	void SetSfxVolume(float Volume);
 
 	// Console commands for measuring performance on a device (they work in any build with a console).

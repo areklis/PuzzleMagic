@@ -519,6 +519,14 @@ void UPuzzleHUDWidget::ShowCard(EPuzzleCard Card)
 	CardLayer->SetVisibility(ESlateVisibility::Visible);
 }
 
+void UPuzzleHUDWidget::OnWindowModeChanged()
+{
+	if (CurrentCard == EPuzzleCard::Options)
+	{
+		RefreshCard();
+	}
+}
+
 void UPuzzleHUDWidget::RefreshCard()
 {
 	if (CurrentCard != EPuzzleCard::None)
@@ -639,6 +647,19 @@ void UPuzzleHUDWidget::BuildCardContent(EPuzzleCard Card)
 		Add(MakeText(TEXT("combos, relics and luck"), false, 28.f, Lavender, 3.f), 6.f);
 		Add(Btn(FString::Printf(TEXT("BONUS TILES  %s"), bBonus ? TEXT("ON") : TEXT("OFF")), FVector2D(620.f, 120.f), bBonus ? Emerald : Ruby, bBonus ? Emerald2 : Ruby2, ActToggleBonus), 30.f);
 		Add(MakeText(TEXT("special tiles worth extra points"), false, 28.f, Lavender, 3.f), 6.f);
+		// Graphics (a PC; a phone or tablet is always Low) and the window mode (PC only), side by side to keep the card short.
+		{
+			const bool bLow = GameMode && GameMode->IsLowGraphics();
+			const bool bFull = GameMode && GameMode->IsFullscreen();
+			UWidget* GraphicsButton = Btn(FString::Printf(TEXT("GRAPHICS %s"), bLow ? TEXT("LOW") : TEXT("HIGH")), FVector2D(316.f, 80.f), bLow ? Ruby : Emerald, bLow ? Ruby2 : Emerald2, ActToggleGraphics);
+			UWidget* ScreenButton = Btn(bFull ? TEXT("FULLSCREEN") : TEXT("WINDOWED"), FVector2D(316.f, 80.f), bFull ? Emerald : Amethyst, bFull ? Emerald2 : Amethyst2, ActToggleScreen);
+#if PLATFORM_IOS || PLATFORM_ANDROID
+			Add(MakeText(TEXT("graphics are always low on this device"), false, 26.f, Lavender, 3.f), 24.f);
+			(void)GraphicsButton; (void)ScreenButton;
+#else
+			Add(ButtonRow(GraphicsButton, ScreenButton), 28.f);
+#endif
+		}
 		auto VolumeSlider = [this](float Value, bool bMusic) -> UWidget*
 		{
 			USlider* Slider = WidgetTree->ConstructWidget<USlider>();
@@ -889,6 +910,13 @@ void UPuzzleHUDWidget::HandleAction(int32 Action, int32 Param)
 		GameMode->ShowMenu();
 		break;
 	case ActOptions: ShowCard(EPuzzleCard::Options); break;
+	case ActToggleGraphics:
+		GameMode->SetLowGraphics(!GameMode->IsLowGraphics()); // reloads the map
+		break;
+	case ActToggleScreen:
+		GameMode->SetFullscreen(!GameMode->IsFullscreen());
+		RefreshCard();
+		break;
 	case ActToggleRelics:
 	case ActToggleBonus:
 		if (const UPuzzleManager* Rules = GameMode->PuzzleManager.Get())

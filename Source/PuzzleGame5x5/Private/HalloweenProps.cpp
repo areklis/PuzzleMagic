@@ -66,6 +66,7 @@ void AHalloweenProps::BeginPlay()
 		BuildLite();
 		return;
 	}
+	RestoreAfterLite();
 	BuildAll();
 }
 

@@ -295,6 +295,26 @@ void APuzzleGameMode::PuzzleArcadeTest(const FString& What)
 void APuzzleGameMode::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+#if !(PLATFORM_ANDROID || PLATFORM_IOS)
+	// The window mode can also change from outside the options card (Alt+Enter, F11): keep the choice saved and the card honest.
+	const int32 WindowMode = IsFullscreen() ? 1 : 0;
+	if (WindowMode != LastWindowMode)
+	{
+		if (LastWindowMode >= 0)
+		{
+			if (SaveGame && SaveGame->DisplayMode != WindowMode)
+			{
+				SaveGame->DisplayMode = WindowMode;
+				SaveGame->Save();
+			}
+			if (UPuzzleHUDWidget* UI = GetUI())
+			{
+				UI->OnWindowModeChanged();
+			}
+		}
+		LastWindowMode = WindowMode;
+	}
+#endif
 	const FArcadeChallenge* Challenge = GetArcadeChallenge();
 	if (bArcade && ArcadeState == EArcadeState::Playing && Challenge && Challenge->TimeLimitSeconds > 0 && Flow == EPuzzleFlow::Playing && !bPauseMenuOpen && !bGameOver)
 	{

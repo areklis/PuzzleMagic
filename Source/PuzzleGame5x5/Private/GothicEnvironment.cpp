@@ -437,6 +437,7 @@ void AGothicEnvironment::BuildEldritch()
 	// The madness post-process does not compile for the mobile renderer (the engine would paint its default material
 	// over the whole screen), so phones and tablets go without it.
 #if !(PLATFORM_ANDROID || PLATFORM_IOS)
+	if (!PuzzleLite::IsLite()) // Low graphics goes without it too
 	if (UMaterialInterface* MadnessMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Materials/M_PPMadness.M_PPMadness")))
 	{
 		MadnessMID = UMaterialInstanceDynamic::Create(MadnessMaterial, this);

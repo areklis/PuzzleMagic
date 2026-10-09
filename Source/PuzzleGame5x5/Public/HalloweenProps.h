@@ -123,6 +123,8 @@ private:
 	// never goes back above a level that proved too slow.
 	void SetupLitePerformance();
 	void AdaptResolution(float DeltaTime);
+	// Back in High graphics on a PC after Low: puts the screen-wide settings Low changed back as they were.
+	void RestoreAfterLite();
 	void ApplyLiteResolution();
 	float LiteResolution = 0.7f;
 	float LiteCeiling = 1.f;

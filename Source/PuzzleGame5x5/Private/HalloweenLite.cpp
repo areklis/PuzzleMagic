@@ -12,6 +12,26 @@
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerController.h"
 #include "Misc/App.h"
+#include "HAL/IConsoleManager.h"
+#include "PuzzleLite.h"
+
+namespace
+{
+	// What the Low graphics mode changed, so a switch back to High on a PC can undo it (the settings outlive the map).
+	TMap<FString, FString> GSavedSettings;
+
+	void SetSaved(APlayerController* PC, const FString& Name, const FString& Value)
+	{
+		if (!GSavedSettings.Contains(Name))
+		{
+			if (const IConsoleVariable* Variable = IConsoleManager::Get().FindConsoleVariable(*Name))
+			{
+				GSavedSettings.Add(Name, Variable->GetString());
+			}
+		}
+		PC->ConsoleCommand(Name + TEXT(" ") + Value);
+	}
+}
 
 namespace
 {
@@ -70,12 +90,17 @@ void AHalloweenProps::SetupLitePerformance()
 	// Screen-wide effects that are too dear for a weak mobile GPU.
 	if (APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0))
 	{
-		for (const TCHAR* Command : { TEXT("r.Mobile.AntiAliasing 0"), TEXT("r.BloomQuality 0"), TEXT("r.LensFlareQuality 0"), TEXT("r.SceneColorFringeQuality 0"), TEXT("r.FilmGrain 0") })
+		for (const TCHAR* Name : { TEXT("r.Mobile.AntiAliasing"), TEXT("r.BloomQuality"), TEXT("r.LensFlareQuality"), TEXT("r.SceneColorFringeQuality"), TEXT("r.FilmGrain") })
 		{
-			PC->ConsoleCommand(Command);
+			SetSaved(PC, Name, TEXT("0"));
+		}
+		if (!PuzzleLite::IsMobile())
+		{
+			SetSaved(PC, TEXT("r.ScreenPercentage"), TEXT("100"));
 		}
 	}
-	LiteResolution = 0.7f;
+	// A phone starts at 70% and adapts; a PC in Low graphics starts at full resolution and only drops if it is slow.
+	LiteResolution = PuzzleLite::IsMobile() ? 0.7f : 1.f;
 	ApplyLiteResolution();
 }
 
@@ -87,9 +112,25 @@ void AHalloweenProps::ApplyLiteResolution()
 	}
 }
 
+void AHalloweenProps::RestoreAfterLite()
+{
+	APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0);
+	if (!PC)
+	{
+		return;
+	}
+	for (const TPair<FString, FString>& Setting : GSavedSettings)
+	{
+		PC->ConsoleCommand(Setting.Key + TEXT(" ") + Setting.Value);
+	}
+	GSavedSettings.Reset();
+}
+
 void AHalloweenProps::AdaptResolution(float DeltaTime)
 {
-	constexpr float TargetFps = 33.f; // aim a little above 30 so ordinary dips stay above it
+	// A phone aims a little above 30 so ordinary dips stay above it; a PC in Low graphics aims for 60.
+	const float TargetFps = PuzzleLite::IsMobile() ? 33.f : 62.f;
+	const float SlowFps = PuzzleLite::IsMobile() ? 30.f : 50.f; // a PC held at 60 by vsync must not read as slow
 	constexpr float WindowSeconds = 2.5f;
 	constexpr float MinResolution = 0.35f;
 
@@ -118,7 +159,7 @@ void AHalloweenProps::AdaptResolution(float DeltaTime)
 		return;
 	}
 
-	if (Fps < 30.f && LiteResolution > MinResolution)
+	if (Fps < SlowFps && LiteResolution > MinResolution)
 	{
 		// Slow: the cost is mostly per pixel, so the cost of the pixel work scales with the resolution squared.
 		if (LiteLastRaiseFrom > 0.f && LiteResolution > LiteLastRaiseFrom)

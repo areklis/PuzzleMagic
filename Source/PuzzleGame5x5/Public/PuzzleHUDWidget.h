@@ -77,6 +77,8 @@ class PUZZLEGAME5X5_API UPuzzleHUDWidget : public UUserWidget
 
 public:
 	void ShowCard(EPuzzleCard Card);
+	// The window went fullscreen or windowed from outside the card (Alt+Enter): redraw the options card if it is up.
+	void OnWindowModeChanged();
 	void ShowClear(const FPuzzleClearEvent& Event);
 	void ShowComboBroken(int32 LostCombo);
 	void ShowRelicGained(ERelic Relic);
@@ -107,7 +109,7 @@ private:
 	enum EAction : int32
 	{
 		ActPlay, ActRetry, ActMenu, ActHoly, ActReroll, ActHowTo, ActTutorial,
-		ActPause, ActResume, ActTakeOver, ActStartDemo, ActCourses, ActOptions, ActToggleRelics, ActToggleBonus,
+		ActPause, ActResume, ActTakeOver, ActStartDemo, ActCourses, ActOptions, ActToggleRelics, ActToggleBonus, ActToggleGraphics, ActToggleScreen,
 		ActCourse,  // Param = width * 10 + height
 		ActExit,
 		ActArcade, ActArcadeStart, ActArcadeBegin, ActArcadeNext, ActArcadeRetry // ActArcadeStart's Param = challenge to start at

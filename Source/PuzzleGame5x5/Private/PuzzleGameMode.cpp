@@ -13,6 +13,9 @@
 #include "HalloweenProps.h"
 #include "PuzzleLite.h"
 #include "Kismet/GameplayStatics.h"
+#include "GameFramework/GameUserSettings.h"
+#include "Engine/GameViewportClient.h"
+#include "Widgets/SWindow.h"
 #include "GameFramework/PlayerController.h"
 #include "Sound/SoundBase.h"
 #include "UObject/ConstructorHelpers.h"
@@ -73,6 +76,76 @@ void APuzzleGameMode::StartAudioRecording(float Seconds)
 	}), Seconds, false);
 }
 
+void APuzzleGameMode::InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage)
+{
+	Super::InitGame(MapName, Options, ErrorMessage);
+	// Before the camera pawn and the scenery are made: they choose their effects by this.
+	if (UPuzzleSaveGame* Early = UPuzzleSaveGame::LoadOrCreate())
+	{
+		PuzzleLite::SetLowGraphics(Early->bLowGraphics && !PuzzleLite::IsMobile());
+	}
+}
+
+bool APuzzleGameMode::IsLowGraphics() const
+{
+	return PuzzleLite::IsLite();
+}
+
+void APuzzleGameMode::SetLowGraphics(bool bLow)
+{
+	if (PuzzleLite::IsMobile() || !SaveGame || SaveGame->bLowGraphics == bLow)
+	{
+		return;
+	}
+	SaveGame->bLowGraphics = bLow;
+	SaveGame->Save();
+	PuzzleLite::SetLowGraphics(bLow);
+	// The scenery is built once when the map starts, so the map is loaded again to build it in the new mode.
+	UGameplayStatics::OpenLevel(this, FName(*UGameplayStatics::GetCurrentLevelName(this, true)));
+}
+
+bool APuzzleGameMode::IsFullscreen() const
+{
+	// The mode the window is really in (the saved setting can differ, e.g. when the game was started with -windowed).
+	if (GEngine && GEngine->GameViewport)
+	{
+		if (const TSharedPtr<SWindow> Window = GEngine->GameViewport->GetWindow())
+		{
+			return Window->GetWindowMode() != EWindowMode::Windowed;
+		}
+	}
+	return true;
+}
+
+void APuzzleGameMode::SetFullscreen(bool bFullscreen)
+{
+#if !(PLATFORM_ANDROID || PLATFORM_IOS)
+	UGameUserSettings* Settings = GEngine ? GEngine->GetGameUserSettings() : nullptr;
+	if (!Settings)
+	{
+		return;
+	}
+	const FIntPoint Desktop = Settings->GetDesktopResolution();
+	FIntPoint Size = Desktop;
+	if (!bFullscreen)
+	{
+		// A 16:9 window that fits the desktop with room for the title bar.
+		const int32 Width = FMath::Clamp(FMath::RoundToInt(Desktop.X * 0.8f), 960, 1600);
+		Size = FIntPoint(Width, Width * 9 / 16);
+	}
+	Settings->SetFullscreenMode(bFullscreen ? EWindowMode::WindowedFullscreen : EWindowMode::Windowed);
+	Settings->SetScreenResolution(Size);
+	Settings->ApplySettings(false);
+	// Also asks the window itself, which is what changes the mode when the game was started with -windowed.
+	Settings->RequestResolutionChange(Size.X, Size.Y, bFullscreen ? EWindowMode::WindowedFullscreen : EWindowMode::Windowed, false);
+	if (SaveGame)
+	{
+		SaveGame->DisplayMode = bFullscreen ? 1 : 0;
+		SaveGame->Save();
+	}
+#endif
+}
+
 void APuzzleGameMode::StartPlay()
 {
 	Super::StartPlay();
@@ -82,6 +155,10 @@ void APuzzleGameMode::StartPlay()
 	{
 		MusicVolume = SaveGame->MusicVolume;
 		SfxVolume = SaveGame->SfxVolume;
+		if (SaveGame->DisplayMode >= 0 && !PuzzleLite::IsMobile() && IsFullscreen() != (SaveGame->DisplayMode == 1))
+		{
+			SetFullscreen(SaveGame->DisplayMode == 1);
+		}
 	}
 	PuzzleManager = NewObject<UPuzzleManager>(this);
 	LoadCampaign();
