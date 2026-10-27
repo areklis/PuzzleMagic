@@ -1,7 +1,7 @@
 """Stamps a Windows exe with the game's name, company, copyright and icon (its Details tab and its icon in Explorer).
 
-    python Tools/brand_exe.py <exe> --ico <icon.ico> --original <file name> [--name "Wyrd Hands: Block Puzzle"] [--company "Valhalla Studios"]
-                              [--copyright "(c) 2026 Valhalla Studios"] [--version 1.0.0.0]
+    python Tools/brand_exe.py <exe> --ico <icon.ico> --original <file name> [--name "Wyrd Hands: Block Puzzle"] [--company "OakwyrdTales"]
+                              [--copyright "(c) 2026 OakwyrdTales"] [--version 1.0.0.0]
 
 The engine compiles its Windows resource file once for every game (it says "UnrealGame", "Epic Games, Inc." and "Fill out your copyright
 notice..."), so the packaged game exe is patched here after packaging, and the demo's own launcher exe gets the same. It writes a version
@@ -18,8 +18,8 @@ ap.add_argument("exe")
 ap.add_argument("--ico", required=True)
 ap.add_argument("--original", required=True)
 ap.add_argument("--name", default="Wyrd Hands: Block Puzzle")
-ap.add_argument("--company", default="Valhalla Studios")
-ap.add_argument("--copyright", default="\u00a9 2026 Valhalla Studios")
+ap.add_argument("--company", default="OakwyrdTales")
+ap.add_argument("--copyright", default="\u00a9 2026 OakwyrdTales")
 ap.add_argument("--version", default="1.0.0.0")
 args = ap.parse_args()
 

@@ -51,6 +51,12 @@ Write-Host "engine: $Ue  output: $Out"
 if ($DryRun) { Write-Host "dry run: would build win=$Win android=$Android compile=$(-not $SkipCompile)"; return }
 
 function Stop-Leftovers { Get-Process UnrealEditor, UnrealEditor-Cmd, dotnet -ErrorAction SilentlyContinue | Stop-Process -Force; Start-Sleep 3 }
+# Every package starts from an empty output folder: files left by an older build (the old name's folder, an older APK) would otherwise
+# be zipped, branded or copied instead of the new ones.
+function Clear-OutputDir($dir) {
+  $full = [IO.Path]::GetFullPath($dir)
+  if ($full.StartsWith([IO.Path]::GetFullPath($Out), [StringComparison]::OrdinalIgnoreCase) -and (Test-Path $full)) { Remove-Item -LiteralPath $full -Recurse -Force }
+}
 function Run-Uat($packageArgs, $log) {
   foreach ($try in 1..2) {
     & $uat @packageArgs *> $log
@@ -72,6 +78,7 @@ $common = @("BuildCookRun", "-project=$uproject", "-noP4", "-clientconfig=Develo
 
 if ($Win) {
   $dir = Join-Path $Out "WindowsPortable"
+  Clear-OutputDir $dir
   Run-Uat ($common + @("-platform=Win64", "-archivedirectory=$dir")) (Join-Path $Out "win_portable_build.log")
   python (Join-Path $repo "Tools\package_windows.py") $dir (Join-Path $Out "WyrdHandsBlockPuzzle_Windows_Portable.zip")
 }
@@ -82,6 +89,7 @@ if ($Win) {
 function Build-WindowsShipping([string]$Name, [string]$Zip, [string]$ZipMode) {
   $shipArgs = $common | ForEach-Object { $_ -replace '^-clientconfig=Development$', '-clientconfig=Shipping' }
   $dir = Join-Path $Out "Windows$Name"
+  Clear-OutputDir $dir
   Run-Uat ($shipArgs + @("-platform=Win64", "-archivedirectory=$dir")) (Join-Path $Out "win_$($Name.ToLower())_build.log")
   # A Shipping game saves to AppData unless it runs with -NotInstalled. The engine's own launcher exe cannot carry that argument, so the
   # zip gets ours (Tools/DemoLauncher): a double-click then keeps every file in the game's folder.
@@ -139,9 +147,12 @@ function Reset-AndroidIfFlavorChanged([string]$Config, [string]$Flavor) {
 if ($DemoApk) {
   Initialize-Android
   $dir = Join-Path $Out $(if ($DemoDev) { "AndroidDemoDev" } else { "AndroidDemo" })
+  Clear-OutputDir $dir
   $apkName = if ($DemoDev) { "WyrdHandsBlockPuzzle_Demo_Android_dev.apk" } else { "WyrdHandsBlockPuzzle_Demo_Android.apk" }
   # -DemoDev builds the same demo as a Development APK (for the debug commands and the cap test); a release is the Shipping one.
   $demoApkArgs = if ($DemoDev) { $common } else { $common | ForEach-Object { $_ -replace '^-clientconfig=Development$', '-clientconfig=Shipping' } }
+  # -Distribution signs the demo APK with the release key too (not debuggable), so it carries the same publisher as the full game
+  if ($Distribution -and -not $DemoDev) { $demoApkArgs += "-distribution" }
   # the demo APK has no ACCESS_NETWORK_STATE: a patched copy of the engine's GameActivity template copes (see Tools/make_demo_activity.py)
   python (Join-Path $repo "Tools\make_demo_activity.py") $Ue $repo
   if ($LASTEXITCODE -ne 0) { throw "make_demo_activity.py failed" }
@@ -160,6 +171,7 @@ if ($DemoApk) {
 if ($ReleaseApk) {
   Initialize-Android
   $dir = Join-Path $Out "AndroidRelease"
+  Clear-OutputDir $dir
   $relArgs = $common | ForEach-Object { $_ -replace '^-clientconfig=Development$', '-clientconfig=Shipping' }
   if ($Distribution) { $relArgs += "-distribution" }
   # the same lean manifest as the demo (no network or purchase permissions; the game uses none) and the patched GameActivity template
@@ -178,6 +190,7 @@ if ($ReleaseApk) {
 if ($Android) {
   Initialize-Android
   $dir = Join-Path $Out "AndroidDev"
+  Clear-OutputDir $dir
   Reset-AndroidIfFlavorChanged "Development" "full"
   Run-Uat ($common + @("-platform=Android", "-cookflavor=ASTC", "-package", "-archivedirectory=$dir")) (Join-Path $Out "android_dev_build.log")
   Copy-Item (Join-Path $dir "WyrdHandsBlockPuzzle-arm64.apk") (Join-Path $Out "WyrdHandsBlockPuzzle_Android_test.apk") -Force

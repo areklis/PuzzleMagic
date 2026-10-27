@@ -3,11 +3,12 @@
 #include "CoreMinimal.h"
 #include "HAL/FileManager.h"
 #include "Misc/CommandLine.h"
+#include "Misc/DateTime.h"
 #include "Misc/Parse.h"
 #include "Misc/Paths.h"
 
 // The demo build: the same game, trimmed. DEMO 1 (4x4, no bonus tiles, ends at 4000 points) and DEMO 2 (7x7, bonus tiles, ends at 6000)
-// replace PLAY, TUTORIAL stays, and nothing else (no arcade, course choice, bot demo or theme toggle). The theme is always Desk and the chant music is left out.
+// replace PLAY, TUTORIAL stays, and nothing else (no arcade, course choice, bot demo or theme toggle). The look is the Desk, or Halloween from 15 Oct to 15 Nov (IsHalloweenSeason), and the chant music is left out.
 // It is on when the packaged game has a DemoBuild.txt next to its Binaries folder (Tools/package_windows.py --demo writes it), or
 // with the -demobuild launch flag (to try it from the editor build). Everything else is the normal game.
 namespace PuzzleDemo
@@ -22,6 +23,15 @@ namespace PuzzleDemo
 	inline int32 ScoreCap() { return ScoreCap(GMode); }
 	inline bool BonusTiles(int32 InMode) { return InMode != 1; }
 	inline bool BonusTiles() { return BonusTiles(GMode); }
+
+	// The demo looks like Halloween from 15 October to 15 November (by the system's date, any year) and like the Desk the rest of the year.
+	// Purely visual: the demo's boards, caps, menu and rules are the same.
+	inline bool IsHalloweenSeason()
+	{
+		const FDateTime Now = FDateTime::Now();
+		const int32 Day = Now.GetMonth() * 100 + Now.GetDay();
+		return Day >= 1015 && Day <= 1115;
+	}
 
 	inline bool GDemo = false;
 	inline bool IsDemo() { return GDemo; }

@@ -123,7 +123,7 @@ void APuzzleGameMode::InitGame(const FString& MapName, const FString& Options, F
 		}
 		if (PuzzleDemo::IsDemo())
 		{
-			Theme = EPuzzleTheme::Desk; // the demo has the Desk theme only
+			Theme = PuzzleDemo::IsHalloweenSeason() ? EPuzzleTheme::Halloween : EPuzzleTheme::Desk; // the demo's look follows the season (15 Oct - 15 Nov)
 		}
 #if !UE_BUILD_SHIPPING
 		if (FParse::Param(FCommandLine::Get(), TEXT("eventrun")) && ThemeId.IsEmpty())

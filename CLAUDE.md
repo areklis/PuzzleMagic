@@ -8,7 +8,7 @@ build **routes**. The UI is built in C++ (UMG, no Widget Blueprints). Read `READ
 - The designer wants to see each change working (screenshots) before it is committed. Commit only when asked; push only to the
   fork `fork` (`areklis/PuzzleMagic`). The upstream `origin` (ValhalaStudio) is never pushed to.
 - Never run two builds at once, and never a build while the editor or a game is open (corrupts `Intermediate`).
-- After testing on a phone or tablet, close the game (`adb shell am force-stop com.valhallastudios.wyrdhandsblockpuzzle`) and leave the
+- After testing on a phone or tablet, close the game (`adb shell am force-stop com.oakwyrdtales.wyrdhands`) and leave the
   device's settings as found. Never screenshot a whole PC desktop; capture only the game window.
 
 ## Rules (as implemented; the designer confirmed them)
@@ -45,7 +45,7 @@ every bucket is used up"). Code: `CampaignData.*` (parsing), `PuzzleArcade.cpp` 
 ## The demo build (Demo 1 / Demo 2)
 Same code, trimmed, switched on by `PuzzleDemo.h`: a `DemoBuild.txt` next to the packaged game, `-demobuild`, or `PUZZLE_DEMO=1` at build time
 (the demo APK). Menu: DEMO 1 (4x4, no bonus tiles, ends at 4000), DEMO 2 (7x7, bonus tiles, ends at 6000), TUTORIAL, PLAY OPTIONS, EXIT; Desk
-theme only; each mode keeps its own best. `-captest` (dev) brute-forces the cap with `Content/Campaigns/captest.json`. Greek text is picked from
+theme (Halloween instead from 15 Oct to 15 Nov by the system date, purely visual); each mode keeps its own best. `-captest` (dev) brute-forces the cap with `Content/Campaigns/captest.json`. Greek text is picked from
 the system language (`PuzzleLocale.h`, `Content/Localization/el.json`, `tutorial_el.json`). Windows: `build_packages.ps1 -Demo` (Shipping,
 branded launcher that keeps saves in the game folder). Android: `-DemoApk` (Shipping; `PuzzleDemo_UPL.xml` drops the network/billing
 permissions). `-DemoDev` builds the same demo as a Development APK. The script clears an Android configuration when it flips between demo and
