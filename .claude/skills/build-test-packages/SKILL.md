@@ -1,18 +1,18 @@
 ---
 name: build-test-packages
-description: Compile PuzzleMagic and build the Windows zip and the Android APK for testers. Use when asked to build, package, rebuild the test builds, or make the zip/APK.
+description: Compile Wyrd Hands: Block Puzzle and build the Windows zip and the Android APK for testers. Use when asked to build, package, rebuild the test builds, or make the zip/APK.
 ---
 
 # Build the test packages
 
 Run `powershell -File Tools\build_packages.ps1` (add `-Win` or `-Android` for one platform, `-Ue <engine folder>` and `-Out <folder>` if
 the defaults are wrong; `-DryRun` shows what it would do). It compiles the editor target, cooks and packages, retries a package once,
-zips Windows with `Tools/package_windows.py` and copies the APK to `<Out>\PuzzleMagic_Android_test.apk`. Output goes to the folder
+zips Windows with `Tools/package_windows.py` (`-Release` / `-ReleaseApk` build the full game as Shipping packages for players; see CLAUDE.md), and copies the APK to `<Out>\WyrdHandsBlockPuzzle_Android_test.apk`. Output goes to the folder
 `PuzzleMagic_Builds` next to the repo unless `-Out` is given.
 
 Before you start
 - Nothing else may be using the engine: close the editor, any `-game` window and any other build. Two builds at once corrupt
-  `Intermediate` (a corrupt `Definitions.PuzzleGame5x5.h` full of null characters is the sign; delete it).
+  `Intermediate` (a corrupt `Definitions.WyrdHandsBlockPuzzle.h` full of null characters is the sign; delete it).
 - A build takes about 20 minutes for Windows and 20 for Android; run it in the background and wait for it to finish.
 - Android needs the Android SDK, NDK `27.2.12479018` and JDK 21. The script finds JDK 21 itself (or take `-Jdk <folder>`) and does
   not trust an existing `JAVA_HOME`: an old Java 8 there makes the Gradle APK step fail ("This build uses a Java 8 JVM").

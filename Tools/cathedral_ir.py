@@ -9,7 +9,7 @@ import numpy as np
 
 from gothic_audio import SR, lowpass
 
-OUT = r"D:\Unreal Projects\PuzzleGame5x5\RawAudio"
+OUT = r"D:\Unreal Projects\WyrdHandsBlockPuzzle\RawAudio"
 rng = np.random.default_rng(1248)
 
 dur = 5.5

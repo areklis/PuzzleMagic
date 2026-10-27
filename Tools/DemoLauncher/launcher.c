@@ -1,4 +1,4 @@
-/* The demo's PuzzleGame5x5.exe: starts the Shipping game next to it with -NotInstalled and any arguments it was given.
+/* The demo's WyrdHandsBlockPuzzle.exe: starts the Shipping game next to it with -NotInstalled and any arguments it was given.
  *
  * A Shipping Unreal game saves its settings and progress to AppData unless it runs with -NotInstalled, and the engine's own launcher
  * exe cannot carry that argument on Windows. This one can, so double-clicking the exe keeps every file in the game's folder.
@@ -17,8 +17,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrev, PWSTR cmdLine, int sho
 
 	wchar_t binDir[MAX_PATH * 2];
 	wchar_t inner[MAX_PATH * 2];
-	swprintf(binDir, MAX_PATH * 2, L"%ls\\PuzzleGame5x5\\Binaries\\Win64", self);
-	swprintf(inner, MAX_PATH * 2, L"%ls\\PuzzleGame5x5-Win64-Shipping.exe", binDir);
+	swprintf(binDir, MAX_PATH * 2, L"%ls\\WyrdHandsBlockPuzzle\\Binaries\\Win64", self);
+	swprintf(inner, MAX_PATH * 2, L"%ls\\WyrdHandsBlockPuzzle-Win64-Shipping.exe", binDir);
 
 	wchar_t line[8192];
 	swprintf(line, 8192, L"\"%ls\" -NotInstalled %ls", inner, cmdLine ? cmdLine : L"");
@@ -30,7 +30,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrev, PWSTR cmdLine, int sho
 	ZeroMemory(&pi, sizeof(pi));
 	if (!CreateProcessW(inner, line, NULL, NULL, FALSE, 0, NULL, binDir, &si, &pi))
 	{
-		MessageBoxW(NULL, L"Could not start the game. Please unzip the whole folder first.", L"Puzzle Magic", MB_ICONERROR);
+		MessageBoxW(NULL, L"Could not start the game. Please unzip the whole folder first.", L"Wyrd Hands: Block Puzzle", MB_ICONERROR);
 		return 1;
 	}
 	CloseHandle(pi.hThread);

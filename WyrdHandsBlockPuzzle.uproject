@@ -1,0 +1,32 @@
+{
+	"FileVersion": 3,
+	"EngineAssociation": "5.8",
+	"Category": "",
+	"Description": "Wyrd Hands: Block Puzzle - a route puzzle. Drag pieces onto the board and chain tiles into routes.",
+	"Modules": [
+		{
+			"Name": "WyrdHandsBlockPuzzle",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "PythonScriptPlugin",
+			"Enabled": true
+		},
+		{
+			"Name": "ProceduralMeshComponent",
+			"Enabled": true
+		},
+		{
+			"Name": "RealtimeMeshComponent",
+			"Enabled": true
+		}
+	],
+	"TargetPlatforms": [
+		"Windows",
+		"IOS",
+		"Android"
+	]
+}

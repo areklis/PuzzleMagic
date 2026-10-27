@@ -5,7 +5,7 @@ description: Check that text and buttons stay inside the cards and their frame g
 
 # UI overlap check
 
-Cards are UMG widgets built in `Source/PuzzleGame5x5/Private/PuzzleHUDWidget.cpp` (`BuildCardContent`, `BuildTutorialPage`).
+Cards are UMG widgets built in `Source/WyrdHandsBlockPuzzle/Private/PuzzleHUDWidget.cpp` (`BuildCardContent`, `BuildTutorialPage`).
 The card frame lines are about 830 units apart; text must stay inside them on any screen shape.
 
 1. Device sweep (best): the `device-test` skill. `soak.py` takes a screenshot of every card in landscape and portrait on each device, and

@@ -63,7 +63,7 @@ def main():
     if new:
         with open(LOG, "a", encoding="utf-8", newline="\n") as f:
             if f.tell() == 0:
-                f.write("PuzzleMagic dev chat log (YOU = the designer, CLAUDE = the assistant; tool output left out)\n\n")
+                f.write("Wyrd Hands: Block Puzzle dev chat log (YOU = the designer, CLAUDE = the assistant; tool output left out)\n\n")
             f.write("\n".join(new) + "\n")
     json.dump(sorted(done), open(STATE, "w", encoding="utf-8"))
     print("appended %d messages to %s" % (len(new), LOG))

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Puzzle Magic Campaign Editor</title>
+<title>Wyrd Hands: Block Puzzle Campaign Editor</title>
 <style>
 :root {
   --bg: #130b1d; --panel: #1e1330; --panel2: #281a40; --line: #3d2a5c; --ink: #efe6ff; --dim: #a893cf;
@@ -103,7 +103,7 @@ details summary { cursor: pointer; color: var(--dim); }
 </head>
 <body>
 <header>
-  <h1>Puzzle Magic &middot; Campaign Editor</h1>
+  <h1>Wyrd Hands: Block Puzzle &middot; Campaign Editor</h1>
   <button class="btn" id="bNew">New</button>
   <button class="btn" id="bOpen">Open&hellip;</button>
   <button class="btn primary" id="bSave">Save</button>
@@ -137,7 +137,7 @@ details summary { cursor: pointer; color: var(--dim); }
     <div class="card help">
       <h2>Using the file</h2>
       Save it as <code>arcade.json</code> or <code>tutorial.json</code>. To try it, put it in a <code>Campaigns</code> folder next to the game
-      (<code>PuzzleGame5x5/Campaigns/</code> in the packaged build) &mdash; no rebuild needed. To ship it, put it in the project's
+      (<code>WyrdHandsBlockPuzzle/Campaigns/</code> in the packaged build) &mdash; no rebuild needed. To ship it, put it in the project's
       <code>Content/Campaigns/</code>.
     </div>
   </aside>
@@ -151,7 +151,7 @@ details summary { cursor: pointer; color: var(--dim); }
 <script>
 "use strict";
 // ------------------------------------------------------------------------------------------------------------------
-// Data. The file format (version 1) is what the game reads: see Source/PuzzleGame5x5/Private/CampaignData.cpp.
+// Data. The file format (version 1) is what the game reads: see Source/WyrdHandsBlockPuzzle/Private/CampaignData.cpp.
 // Board coordinates: x counts from the left column, y from the BOTTOM row. Directions: up, right, down, left.
 // ------------------------------------------------------------------------------------------------------------------
 const COLORS = ["black", "purple", "red", "ash"];

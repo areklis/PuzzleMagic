@@ -13,13 +13,13 @@ import numpy as np
 from PIL import Image
 
 ADB = os.path.join(os.environ["LOCALAPPDATA"], "Android", "Sdk", "platform-tools", "adb.exe")
-PKG = "com.valhallastudios.puzzlemagic"
+PKG = "com.valhallastudios.wyrdhandsblockpuzzle"
 ACT = PKG + "/com.epicgames.unreal.GameActivity"
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
 # Builds and test output live outside the repo: PM_BUILDS, default the folder PuzzleMagic_Builds next to the repo.
 BUILDS = os.environ.get("PM_BUILDS", os.path.join(os.path.dirname(REPO), "PuzzleMagic_Builds"))
-APK = os.environ.get("PM_APK", os.path.join(BUILDS, "PuzzleMagic_Android_test.apk"))
+APK = os.environ.get("PM_APK", os.path.join(BUILDS, "WyrdHandsBlockPuzzle_Android_test.apk"))
 OUTBASE = os.environ.get("PM_OUT", os.path.join(BUILDS, "AndroidTests"))
 os.makedirs(OUTBASE, exist_ok=True)
 HOURS = float(sys.argv[1]) if len(sys.argv) > 1 else 3.0

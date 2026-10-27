@@ -13,7 +13,7 @@ import urllib.request
 
 COMFY = "http://127.0.0.1:8188"
 COMFY_OUT = r"C:\Users\VagDi\ComfyUI\output"
-OUT = r"D:\Unreal Projects\PuzzleGame5x5\RawTextures"
+OUT = r"D:\Unreal Projects\WyrdHandsBlockPuzzle\RawTextures"
 DEEPBUMP = r"D:\UEDeps\DeepBump"
 NEGATIVE = "text, watermark, signature, people, face, perspective, vanishing point, shadow of camera, frame, border, blurry, lowres"
 

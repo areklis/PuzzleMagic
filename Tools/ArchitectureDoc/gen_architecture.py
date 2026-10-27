@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Generates Architecture.html in the project root: the interactive architecture guide for Puzzle Magic.
+"""Generates Architecture.html in the project root: the interactive architecture guide for Wyrd Hands: Block Puzzle.
 
 What comes from the code (so the page can't drift from it):
-  * every class, struct, enum and namespace in Source/PuzzleGame5x5/Public, with members, signatures,
+  * every class, struct, enum and namespace in Source/WyrdHandsBlockPuzzle/Public, with members, signatures,
     UPROPERTY/UFUNCTION specifiers, section headings and doc comments (a small C++ header parser);
   * every relationship arrow is checked against the .cpp line(s) that make it true: if a call or a
     spawn disappears from the code, generation fails and names the stale arrow;
@@ -24,7 +24,7 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PROJ = os.path.abspath(os.path.join(HERE, "..", ".."))
-SRC = os.path.join(PROJ, "Source", "PuzzleGame5x5")
+SRC = os.path.join(PROJ, "Source", "WyrdHandsBlockPuzzle")
 PUBLIC = os.path.join(SRC, "Public")
 PRIVATE = os.path.join(SRC, "Private")
 TEMPLATE = os.path.join(HERE, "template.html")
@@ -492,6 +492,15 @@ CLASSES = [
     ("FPuzzleThemeDef", "atmos", "One theme: id, button name, tile materials, hand tiles, props, plain board, scenery and lightweight backdrop.", False),
     ("PuzzleStyle", "atmos", "The theme table (Desk, Halloween, Classic): per theme the tile materials, hand or plain tiles, props, plain board, scenery and the lightweight backdrop. Chosen in Play options (saved, reloads the map) or with -theme=; adding a theme is one entry here.", False),
     ("ADeskEnvironment", "atmos", "The Desk theme's scenery: plank-wood desk top (M_DeskWood), a plain wall, a mug, pencil and notebook (M_DeskProp), soft daylight and the board key light. Real geometry, so no pre-rendered picture is needed in the lightweight mode.", False),
+    ("FPuzzleRiddle", "rules", "One riddle: a topic, a question, four answers (the first is the right one; a card shuffles them) and a line of lore told after the answer. 72 in PuzzleRiddles(); the Halloween event asks the 55 of every topic except Day of the Dead and Mardi Gras / New Orleans (HalloweenEventRiddleIndices). Not wired into play yet.", False),
+    ("AEventSpots", "atmos", "The floor of the Halloween event run: eight spots beside the play area (four left, four right). A Treat! puts a cauldron on a random empty one, a Trick! a pumpkin; when all are taken a Treat! adds nothing and a Trick! turns a random cauldron into a pumpkin. Positions are screen positions projected onto the floor, so they follow every board size and screen shape.", False),
+    ("EEventSpotKind", "atmos", "What stands on an event spot: nothing, a cauldron or a pumpkin.", False),
+    ("AEventCandles", "atmos", "The candles above the play area in the Halloween event run: five clusters filling left to right, one for each day's first success; the fifth unlocks the Halloween theme.", False),
+    ("UHalloweenEvent", "rules", "The Halloween seasonal event run's rules (Specs/TrickOrTreatEvent.md): 6x6, every 300 points a riddle from the 55-riddle event pool; a right answer is a Treat!, a wrong one a Trick!; 5 tricks lose, 5 treats win. Keeps the counts and the riddle (answers shuffled); the scene and end screens live in the game mode and the HUD.", False),
+    ("UTrickOrTreat", "rules", "The Halloween packet: it turns up every PacketEvery points (Relics option on) and asks Trick or treat? A treat is bought (luck, an extra tile, a Holy Light); a trick spins a wheel of eight fortunes, half good and half bad. The rules live here, the cards in UPuzzleHUDWidget, the flow in APuzzleGameMode.", False),
+    ("FTreatOffer", "rules", "One thing the Treat side of the packet sells: a single treat or a Halloween bundle of several.", False),
+    ("IPuzzleStore", "rules", "Where a treat is paid for. Only the test store exists today; a StoreKit one would sit behind the same call.", False),
+    ("FTestPuzzleStore", "rules", "The test store: every purchase succeeds at once and costs nothing.", False),
     ("PuzzleLite", "atmos", "IsLite(): whether the lightweight scene is used (phones and tablets, or -lite on a PC; on Android debug.puzzle.lite 0 turns it off for comparisons).", False),
     ("PuzzleDemo", "atmos", "The demo build's switch and modes (header only): on with a DemoBuild.txt, -demobuild or PUZZLE_DEMO at build time; Demo 1 is 4x4 without bonus tiles ending at 4000 points, Demo 2 is 7x7 with bonus tiles ending at 6000. -captest (dev) brute-forces the cap.", False),
     ("PuzzleLocale", "atmos", "Greek text for the how-to pages and the tutorial, picked from the system language (header only; Content/Localization/el.json). Terms and the big titles stay English; no toggle in the UI.", False),
@@ -518,9 +527,11 @@ EDGE_KINDS = [
     ("lib", "Uses a library"),
 ]
 
-# (from, to, kind, label, [(file in Source/PuzzleGame5x5/Private, regex), ...]) -- every regex must match.
+# (from, to, kind, label, [(file in Source/WyrdHandsBlockPuzzle/Private, regex), ...]) -- every regex must match.
 GM = "PuzzleGameMode.cpp"
 RELATIONS = [
+    ("APuzzleGameMode", "UHalloweenEvent", "own", "creates the event rules", [(GM, r"NewObject<UHalloweenEvent>")]),
+    ("APuzzleGameMode", "UTrickOrTreat", "own", "creates the packet rules", [(GM, r"NewObject<UTrickOrTreat>")]),
     ("APuzzleGameMode", "UPuzzleManager", "own", "creates the rules", [(GM, r"NewObject<UPuzzleManager>")]),
     ("APuzzleGameMode", "AGridManager", "own", "spawns the board", [(GM, r"SpawnActor<AGridManager>")]),
     ("APuzzleGameMode", "APuzzleInputHandler", "own", "spawns", [(GM, r"SpawnActor<APuzzleInputHandler>")]),
@@ -556,7 +567,7 @@ RELATIONS = [
     ("AGothicEnvironment", "lib_Audio", "lib", "MS_Abyss · convolution reverb", [("GothicEnvironment.cpp", r"MS_Abyss"), ("GothicEnvironment.cpp", r"USubmixEffectConvolutionReverbPreset")]),
     ("EldritchNoise", "lib_FastNoise2", "lib", "FractalFBm(Simplex)", [("EldritchNoise.cpp", r"FastNoise::New")]),
     ("APuzzleHUD", "UPuzzleHUDWidget", "own", "creates", [("PuzzleHUD.cpp", r"CreateWidget<UPuzzleHUDWidget>")]),
-    ("UPuzzleHUDWidget", "APuzzleGameMode", "call", "button actions: StartEndless · Retry…", [("PuzzleHUDWidget.cpp", r"GameMode->StartEndless"), ("PuzzleHUDWidget.cpp", r"GameMode->Retry")]),
+    ("UPuzzleHUDWidget", "APuzzleGameMode", "call", "button actions: PlayBoard · Retry…", [("PuzzleHUDWidget.cpp", r"GameMode->PlayBoard"), ("PuzzleHUDWidget.cpp", r"GameMode->Retry")]),
     ("UPuzzleHUDWidget", "UPuzzleManager", "call", "polls score · moves · combo · luck", [("PuzzleHUDWidget.cpp", r"Rules->GetLuck\(\)"), ("PuzzleHUDWidget.cpp", r"Rules->ComboStreak")]),
     ("UPuzzleHUDWidget", "APuzzleInputHandler", "call", "targeting and HOLD hover state", [("PuzzleHUDWidget.cpp", r"InputHandler->IsHolyTargeting"), ("PuzzleHUDWidget.cpp", r"InputHandler->IsHoveringReserve")]),
     ("UPuzzleHUDWidget", "AGridManager", "call", "places the HOLD label", [("PuzzleHUDWidget.cpp", r"GridManager->GetTrayAnchorWorldLocation")]),
@@ -576,9 +587,16 @@ FLAG_TEXT = {
     "theme": "Forces a theme by id (desk, halloween, classic); the Play options THEME button does the same and is saved. With -backdropcapture it renders a cathedral theme's backdrop picture.",
     "backdropcapture": "PC only: ten seconds in, hide the board, tiles and interface, save a 1920x1080 shot (Saved/Screenshots) and quit. Renders the lightweight mode's backdrop picture (use with -demo -grid=8x8).",
     "recordaudio": "Record the game's audio mix for N seconds to Saved/Recording/demo_audio.wav, then quit.",
+    "nowallcandles": "With -backdropcapture: leaves the wall candles' wax and flames out of the rendered picture (the Halloween event's backdrop, T_LiteBackdropEvent).",
+    "eventrun": "Starts the Halloween event run at once, in the Halloween theme (development builds; with -demo the bot plays it).",
+    "packets": "Turns the Trick-or-Treat packet on (it is off by default: not part of the demo or the release).",
+    "treatpacket": "A Trick-or-Treat packet arrives a moment into every round (combos, relics and luck switch on for it): for recordings.",
+    "treatchoice": "Which side the bot picks when a packet arrives: treat or trick.",
+    "treatoffer": "Which offer the bot buys from the Treat shop (default the first).",
+    "tricksegment": "The Trick wheel always stops on segment N (0-7), so a recording shows a chosen fortune.",
 }
 
-FLAG_ARG = {"grid": "=WxH", "tutorialpage": "=N", "dread": "=X", "recordaudio": "=N"}
+FLAG_ARG = {"grid": "=WxH", "tutorialpage": "=N", "dread": "=X", "recordaudio": "=N", "treatchoice": "=treat|trick", "treatoffer": "=N", "tricksegment": "=N"}
 
 SCRIPTS = [
     ("build_classic_route_tiles.py", "Unreal editor Python", "M_TileRouteClassic: the Classic look's tile material with a triangle on every tile (the Route puzzle MVP's version of build_route_tiles.py)."),
@@ -587,6 +605,8 @@ SCRIPTS = [
     ("build_packages.ps1", "PowerShell", "Compiles the editor target and builds the Windows and Android test packages (finds the engine, retries a failed cook, zips Windows)."),
     ("brand_exe.py", "Python", "Stamps the real name, company, copyright and icon into a Windows exe (the engine labels every game exe UnrealGame / Epic Games); used for the demo."),
     ("build_bonus_icons.py", "Unreal editor Python", "M_UIBonusIcon: a UI material that draws the three plain-tile bonus symbols (basic, outgoing diamond, incoming fisheye) for the help pages, so they match the tiles."),
+    ("darken_pumpkin_colormap.py", "Python", "Makes RawMeshes/Kenney/colormap_dark.png: the bright cells of Kenney's colour map that the carved pumpkin uses for the insides of its cuts become near black, so the carved face stands out."),
+    ("import_kenney_pumpkin.py", "Unreal editor Python", "Imports the carved pumpkin of Kenney's Graveyard Kit (CC0, files in RawMeshes/Kenney) as SM_PumpkinCarved with its colour map and a plain lit material; the event floor puts it on every Trick!."),
     ("import_demo_music.py", "Unreal editor Python", "Imports an mp3 as /Game/Audio/MUS_Demo, the demo's background tune (not kept in the repository)."),
     ("make_demo_activity.py", "Python", "Writes a copy of the engine's GameActivity template that copes with a missing ACCESS_NETWORK_STATE permission (the demo APK drops it); fails if the engine text differs."),
     ("package_windows.py", "Python", "Zips a packaged Windows build with forward-slash paths, the campaign editor and the starter campaigns."),
@@ -877,7 +897,7 @@ def main():
     arch_svg = "".join(a)
 
     folders = [
-        ("Source/PuzzleGame5x5", "All game code: Public headers, Private sources."),
+        ("Source/WyrdHandsBlockPuzzle", "All game code: Public headers, Private sources."),
         ("Source/MeshOptimizer", "meshoptimizer 1.3, compiled with the project."),
         ("Source/ThirdParty", "SDL3 and FastNoise2 as prebuilt external modules (Win64 libraries)."),
         ("Plugins", "RealtimeMeshComponent (source)."),
@@ -1128,7 +1148,7 @@ def main():
 <p class="kicker">Nothing in <code>Content/</code> is drawn or recorded by hand. Scripts generate it, editor commandlets import it, and C++ picks it up.</p>
 <figure>
   <div class="fig-scroll">{svg}</div>
-  <figcaption>Commandlet runs look like <code>UnrealEditor-Cmd.exe PuzzleGame5x5.uproject -run=pythonscript -script=Tools\\build_eldritch_fx.py</code>. Close the running game first: it locks the map and the module DLL.</figcaption>
+  <figcaption>Commandlet runs look like <code>UnrealEditor-Cmd.exe WyrdHandsBlockPuzzle.uproject -run=pythonscript -script=Tools\\build_eldritch_fx.py</code>. Close the running game first: it locks the map and the module DLL.</figcaption>
 </figure>
 {scripts}
 <p>{unscripted}</p>
@@ -1181,9 +1201,9 @@ def main():
 <p>Add these to the game's command line (after <code>-game</code>). Read in the files shown.</p>
 {flags}
 <h3>Build, rebuild, regenerate</h3>
-<pre class="cmd">"C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Build\\BatchFiles\\Build.bat" PuzzleGame5x5Editor Win64 Development -Project="D:\\Unreal Projects\\PuzzleGame5x5\\PuzzleGame5x5.uproject" -WaitMutex
+<pre class="cmd">"C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Build\\BatchFiles\\Build.bat" WyrdHandsBlockPuzzleEditor Win64 Development -Project="D:\\Unreal Projects\\WyrdHandsBlockPuzzle\\WyrdHandsBlockPuzzle.uproject" -WaitMutex
 
-"C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Binaries\\Win64\\UnrealEditor-Cmd.exe" "D:\\Unreal Projects\\PuzzleGame5x5\\PuzzleGame5x5.uproject" -run=pythonscript -script="D:\\Unreal Projects\\PuzzleGame5x5\\Tools\\build_eldritch_fx.py"
+"C:\\Program Files\\Epic Games\\UE_5.8\\Engine\\Binaries\\Win64\\UnrealEditor-Cmd.exe" "D:\\Unreal Projects\\WyrdHandsBlockPuzzle\\WyrdHandsBlockPuzzle.uproject" -run=pythonscript -script="D:\\Unreal Projects\\WyrdHandsBlockPuzzle\\Tools\\build_eldritch_fx.py"
 
 python Tools\\ArchitectureDoc\\gen_architecture.py</pre>
 <h3>Tunables</h3>

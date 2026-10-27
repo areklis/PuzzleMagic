@@ -4,7 +4,7 @@
 # Run: UnrealEditor-Cmd.exe <uproject> -run=pythonscript -script=<this file>
 import unreal
 
-exec(open(r"D:\Unreal Projects\PuzzleGame5x5\Tools\arcane_head.py", encoding="utf-8").read())
+exec(open(r"D:\Unreal Projects\WyrdHandsBlockPuzzle\Tools\arcane_head.py", encoding="utf-8").read())
 
 MOTE_HLSL = r"""
 float2 p = (InUV - 0.5) * 2.0;

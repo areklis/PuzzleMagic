@@ -8,7 +8,7 @@ import numpy as np
 import audio_fx
 
 SR = 44100
-OUT = r"D:\Unreal Projects\PuzzleGame5x5\RawAudio"
+OUT = r"D:\Unreal Projects\WyrdHandsBlockPuzzle\RawAudio"
 os.makedirs(OUT, exist_ok=True)
 rng = np.random.default_rng(1666)
 

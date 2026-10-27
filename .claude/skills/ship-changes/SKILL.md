@@ -1,6 +1,6 @@
 ---
 name: ship-changes
-description: Commit, push and prepare a pull request for PuzzleMagic the way the designer wants it. Use when asked to commit, push, or open/prepare a PR.
+description: Commit, push and prepare a pull request for Wyrd Hands: Block Puzzle the way the designer wants it. Use when asked to commit, push, or open/prepare a PR.
 ---
 
 # Ship changes

@@ -1,4 +1,4 @@
-# Puzzle Magic
+# Wyrd Hands: Block Puzzle
 
 A gothic 8×8 block puzzle with a Lovecraftian edge, made in Unreal Engine 5.8 with C++. Drag pieces onto the board and build routes across the board in a candle-lit cathedral that darkens and flickers as your luck runs out. It is a landscape-only game for iPhone and is developed and played on Windows.
 
@@ -18,7 +18,7 @@ Every tile carries a skeleton hand whose finger points up, right, down or left. 
 - **Halloween.** A stream of lime-green liquid runs along every cleared route in its direction (magenta for potion chains, orange for pumpkin chains). Two steaming cauldrons of lime-green brew stand beside the board and bats fly around it.
 - **Campaigns: arcade and tutorial.** ARCADE (challenges of escalating difficulty) and TUTORIAL (a step-by-step lesson) on the main menu play campaign files. A step sets a goal score and/or a number of routes to clear, an optional time limit, the board size, which relics (Holy Light, Reroll; either switches combos and luck on) and bonus tiles (pumpkin, full potion, empty potion) are in play, popup text before and after, a hint line, tiles already on the board, and a **curated tray**: buckets of pieces dealt in order instead of random ones. Besides the goal score and routes, a step can set the **starting charges** of Holy Light and Reroll (0 to 3, default 1 each), can be won by **using up every preset bucket**, and can preset **reroll buckets**: each Reroll deals the next one in order instead of random pieces (after the last, random or start over). A step is won when its goals are met and lost when time runs out, no piece fits, or the curated pieces run out; beating one opens the next, and progress is saved per campaign.
   - **Editor.** `Tools/CampaignEditor/campaign_editor.html` is a standalone editor: double-click it to open it in any browser (no install, works offline). Build steps, paint the starting board, design the curated buckets, and Open/Save the `.json` file.
-  - **Files.** The game reads `arcade.json` and `tutorial.json` from a `Campaigns` folder next to the game (`PuzzleGame5x5/Campaigns/` in the packaged build, so a new file can be tried without rebuilding), then from the bundled `Content/Campaigns/`. The starter campaigns are in `Content/Campaigns/`.
+  - **Files.** The game reads `arcade.json` and `tutorial.json` from a `Campaigns` folder next to the game (`WyrdHandsBlockPuzzle/Campaigns/` in the packaged build, so a new file can be tried without rebuilding), then from the bundled `Content/Campaigns/`. The starter campaigns are in `Content/Campaigns/`.
   - **Testing.** In the game console, `PuzzleArcadeTest win|fail|time` tries a step's popups without playing it.
 - **Frame cap.** Phones and tablets are capped at 30 frames a second and the lightweight scene fits its 3D resolution to hold that, which measured about a fifth less power while playing than running uncapped (on a 720x1640 phone: 383 mA against 491 mA). The debug command `PuzzlePerf <max fps> <resolution %> <automatic 1/0>` (and `PuzzleUiCard <screen>`, used by the device test scripts) changes it on a test build.
 - **Themes** (Play options THEME button; saved; `-theme=desk|halloween|classic`). A table in `PuzzleStyle.h` holds one entry per theme, and changing it reloads the map. **Desk** (the default) has plain triangle tiles with the bright blue/green/red/purple palette, a graphite board and tray, and a quiet wooden desk with a mug, pencil and notebook; it is real geometry, so even the low-spec mode needs no backdrop picture (`Tools/build_desk_materials.py`). **Halloween** is the skeleton-hand tiles, potions, pumpkin, cauldrons, bats and route streams in the gothic cathedral. **Classic** is the Route puzzle MVP as before the Halloween theme: triangle tiles in the cathedral without cauldrons, bats or streams (backdrop `Tools/LiteArt/T_LiteBackdropClassic.png`, rendered with `-backdropcapture -theme=classic`). Adding a theme is one `EPuzzleTheme` value, one table entry and its scenery.
@@ -43,10 +43,10 @@ git clone https://github.com/areklis/PuzzleMagic.git "D:\Unreal Projects\PuzzleM
 
 ## Build and run
 
-Open `PuzzleGame5x5.uproject` and let Unreal build the missing modules, or build from a terminal in the project folder:
+Open `WyrdHandsBlockPuzzle.uproject` and let Unreal build the missing modules, or build from a terminal in the project folder:
 
 ```bat
-"C:\Program Files\Epic Games\UE_5.8\Engine\Build\BatchFiles\Build.bat" PuzzleGame5x5Editor Win64 Development "-Project=%CD%\PuzzleGame5x5.uproject" -WaitMutex
+"C:\Program Files\Epic Games\UE_5.8\Engine\Build\BatchFiles\Build.bat" WyrdHandsBlockPuzzleEditor Win64 Development "-Project=%CD%\WyrdHandsBlockPuzzle.uproject" -WaitMutex
 ```
 
 | Launcher | What it does |
@@ -65,6 +65,7 @@ Open `PuzzleGame5x5.uproject` and let Unreal build the missing modules, or build
 | `-tutorial`, `-tutorialpage=N` | Shows the How to play pages over the menu (they open by themselves on first launch), at page N counting from 0. Ignored with `-demo` |
 | `-dread=X` | Keeps the dread effects at least at X, 0 to 1 |
 | `-recordaudio=N` | Records the game's audio mix to `Saved/Recording/demo_audio.wav` for N seconds, then quits |
+| `-packets` | Turns on the Trick-or-Treat packet (off by default; it is not part of the demo or the release). `-treatpacket` also forces one into every round, `-treatchoice=treat\|trick`, `-treatoffer=N` and `-tricksegment=N` steer the bot and the wheel for recordings |
 
 ## The demo build
 
@@ -76,7 +77,7 @@ Desk theme only, a Greek translation chosen by the system language. See the "dem
 
 | Path | Contents |
 |---|---|
-| `Source/PuzzleGame5x5` | The game module: rules, board, input, camera, cathedral environment, bot, and the UI (UMG built in C++) |
+| `Source/WyrdHandsBlockPuzzle` | The game module: rules, board, input, camera, cathedral environment, bot, and the UI (UMG built in C++) |
 | `Source/MeshOptimizer`, `Source/ThirdParty` | meshoptimizer as an engine module; FastNoise2 (prebuilt static libraries) and SDL3 |
 | `Plugins` | RealtimeMeshComponent |
 | `Content` | Map, materials, meshes, textures, audio and fonts |
@@ -95,6 +96,7 @@ GitHub shows `Architecture.html` as source code. Open it in a browser from a clo
 | meshoptimizer | 1.3 | MIT |
 | FastNoise2 | 1.1.1 | MIT |
 | Cinzel Decorative and Lilita One fonts | | SIL Open Font License 1.1 |
+| Carved pumpkin model (Kenney, Graveyard Kit, `RawMeshes/Kenney`) | 5.0 | CC0 |
 
 Their license texts are included with them. The original code and assets in this repository are released under CC0 1.0 (see LICENSE); the third-party components above keep their own licenses.
 

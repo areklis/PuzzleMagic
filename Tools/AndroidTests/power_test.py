@@ -14,12 +14,12 @@ from PIL import Image
 
 ADB = os.path.join(os.environ["LOCALAPPDATA"], "Android", "Sdk", "platform-tools", "adb.exe")
 PHONE = os.environ.get("PM_DEVICE") or ""   # the adb serial; default: the only connected device
-PKG = "com.valhallastudios.puzzlemagic"
+PKG = "com.valhallastudios.wyrdhandsblockpuzzle"
 ACT = PKG + "/com.epicgames.unreal.GameActivity"
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
 BUILDS = os.environ.get("PM_BUILDS", os.path.join(os.path.dirname(REPO), "PuzzleMagic_Builds"))
-APK = os.environ.get("PM_APK", os.path.join(BUILDS, "PuzzleMagic_Android_test.apk"))
+APK = os.environ.get("PM_APK", os.path.join(BUILDS, "WyrdHandsBlockPuzzle_Android_test.apk"))
 OUTBASE = os.environ.get("PM_OUT", os.path.join(BUILDS, "AndroidTests"))
 os.makedirs(OUTBASE, exist_ok=True)
 if not PHONE:

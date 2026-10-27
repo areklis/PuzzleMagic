@@ -10,9 +10,9 @@ import os
 
 import unreal
 
-exec(open(r"D:\Unreal Projects\PuzzleGame5x5\Tools\arcane_head.py", encoding="utf-8").read())
+exec(open(r"D:\Unreal Projects\WyrdHandsBlockPuzzle\Tools\arcane_head.py", encoding="utf-8").read())
 
-PROJ = r"D:\Unreal Projects\PuzzleGame5x5"
+PROJ = r"D:\Unreal Projects\WyrdHandsBlockPuzzle"
 
 
 def import_file(filename, dest, name, factory=None, options=None):
@@ -230,7 +230,7 @@ if len(waves) == len(stems) and not eal.does_asset_exist("/Game/Audio/MS_Abyss")
         connect(pin_out(filt, "Out"), audio_outs[index])
 
     editor = unreal.get_editor_subsystem(unreal.MetaSoundEditorSubsystem)
-    doc, res = editor.build_to_asset(builder, "PuzzleGame5x5", "MS_Abyss", "/Game/Audio")
+    doc, res = editor.build_to_asset(builder, "WyrdHandsBlockPuzzle", "MS_Abyss", "/Game/Audio")
     unreal.log("allopts: MetaSound MS_Abyss -> %s" % res)
     eal.save_asset("/Game/Audio/MS_Abyss")
 

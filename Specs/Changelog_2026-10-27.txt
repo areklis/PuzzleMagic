@@ -1,0 +1,103 @@
+WYRD HANDS: BLOCK PUZZLE - CHANGELOG, 24-27 OCT 2026
+Branch wyrd-hands-release, on top of upstream main (b4aa432, PR #7 merged).
+Written for the designer's review. "Checked" says where each item was seen working.
+
+=======================================================================
+1. NEW NAME AND PROJECT
+=======================================================================
+- The game is "Wyrd Hands: Block Puzzle" (menu title "Wyrd / Hands" with "Block Puzzle" under it).
+- Project and module renamed: WyrdHandsBlockPuzzle.uproject, Source/WyrdHandsBlockPuzzle, targets and API macro.
+  A package redirect in DefaultEngine.ini keeps the old PuzzleGame5x5 script package loading.
+- Android package id: com.valhallastudios.wyrdhandsblockpuzzle. Exe, zip and APK file names renamed.
+  (The colleague's branch wyrd-hands-demo uses com.oakwyrdtales.wyrdhands: the two need aligning before either ships.)
+- Docs, skills, scripts and Architecture.html updated for the new names.
+
+=======================================================================
+2. THE HALLOWEEN EVENT: TRICK OR TREAT  (spec: Specs/TrickOrTreatEvent.md)
+=======================================================================
+- A TRICK OR TREAT button above PLAY, only 1 Oct - 30 Nov 2026 by the device date.
+- 6x6 board, Halloween look, relics, luck and bonus tiles on.
+- Every 300 points a riddle appears (55 riddles: Halloween, Monsters, Dark folklore, Gothic tales, Myth;
+  Day of the Dead and Mardi Gras / New Orleans left out). Which riddles were asked is saved; none repeats
+  until all have been asked.
+- Right answer = Treat! (a cauldron on a random empty one of 8 floor spots).
+  Wrong answer = Trick! (a pumpkin). With all 8 taken, a Treat! adds nothing and a Trick! turns a random
+  cauldron into a pumpkin.
+- 5 Tricks = game over. The first 5 Treats of the day = success (the system date decides the day). Both fade to
+  black and wait for a click or touch to go back to the menu. Later runs the same day play on without the
+  success screen. Running out of room is also a normal game over.
+- Candles above the board fill by one fifth for each day's first success (any five days). Five unlock
+  Halloween as a theme choice.
+- The floor starts empty in the event (no scenery cauldrons, bats, steam; the wall candles are gone too).
+- Pumpkins: Kenney's carved pumpkin (CC0, RawMeshes/Kenney, credited in the README), tilted toward the camera,
+  with near-black carved insides. Cauldrons are the game's own.
+- New Theme option in Play options: AUTO (default; the event's theme during an event, Desk otherwise),
+  DESK (Desk everywhere except the event run), HALLOWEEN (once unlocked). Replaces the old THEME cycle button.
+- Event backdrop for phones, tablets and Low graphics: a new picture without the wall candles
+  (Content/Lite/T_LiteBackdropEvent, rendered with -backdropcapture -classic -nowallcandles).
+- Checked: PC (landscape, phone and tablet shaped portrait windows) and the tablet in landscape. The whole
+  success path, the unlock, the Theme option and the Desk -> event map reload were run on PC.
+
+=======================================================================
+3. MENU AND CONTROLS
+=======================================================================
+- PLAY now opens a card: TINY 4x4, SMALL 5x5, MEDIUM 6x6, BIG 7x7, LARGE 8x8; a pick starts a game on that board.
+- SELECT COURSE and the "course 8x8" line are gone from the menu; ARCADE is hidden. The code stays.
+- Esc opens and closes the menu (with a piece in hand it first lets go of it). P no longer opens it.
+- The first run opens in a window for everyone (it was only the demo).
+- The game keeps its sound when its window loses focus (for streaming).
+- The combo badge always stays whole inside the screen.
+- Wording: neutral terms in every theme: COMBO xN!, combo xN lost, Circuit!, CIRCUIT / COMBO in the how-to pages.
+
+=======================================================================
+4. LAYOUT ON PHONES (TALL, NARROW SCREENS)
+=======================================================================
+- Event spots stand in two rows on slim screens: one above the board's candles, one below the trays,
+  each row sized for its distance from the camera. Landscape keeps two columns per side.
+- Candles are small and placed from the board's position, not the screen's.
+- MENU and the relic buttons grow (up to 1.8x) on tall screens.
+- Checked on PC windows of 320, 360, 430, 500 and 820 pixels wide. Not yet seen on a real phone in portrait.
+
+=======================================================================
+5. DEMO, DESK THEME, GREEK (from the earlier work, now in this branch)
+=======================================================================
+- Desk theme and a theme table (Desk, Halloween, Classic) in PuzzleStyle.h.
+- Demo build: DEMO 1 (4x4, no bonus tiles, ends at 4000) and DEMO 2 (7x7, bonus tiles, ends at 6000), Desk only.
+- Greek how-to pages and tutorial (picked from the system language, no toggle).
+
+=======================================================================
+6. THE TRICK-OR-TREAT SHOP (upstream, kept but OFF)
+=======================================================================
+- The packet, treat shop and trick wheel are in the code but off in every build
+  (UTrickOrTreat::IsEnabled: only -packets / -treatpacket on a development PC build). Kept as the baseline
+  for a future shop. Its prices come from a free test store.
+
+=======================================================================
+7. BUILD AND PACKAGING
+=======================================================================
+- build_packages.ps1: -Release (Windows full game zip), -ReleaseApk (Android full game), -Distribution,
+  -DemoDev; clears the Android build when it flips between demo and full game.
+- Android release permissions: only WAKE_LOCK, VIBRATE, MODIFY_AUDIO_SETTINGS.
+- Fixed: assets loaded by name were not cooked (the event pumpkin): /Game/Event is now always cooked.
+- Fixed: a stray control character had broken the launcher step of build_packages.ps1.
+- Dev tools added: -eventrun, -nowallcandles, and PuzzleUiCard commands riddle, eventfill, eventcandles,
+  eventend, eventbot, eventwin, eventdays, eventstart, themecycle, playsizes.
+
+=======================================================================
+8. TESTED (SESSION)
+=======================================================================
+- Tablet, landscape: menu, PLAY card and a 6x6 game with a touch drag, event floor and backdrop, riddle card,
+  end screen with a real touch back to the menu, bot playing the event: median 29.0 fps (min 26.5).
+- PC: all of the above plus the portrait shapes; a Windows release zip from a fresh folder.
+
+=======================================================================
+9. NOT DONE / OPEN
+=======================================================================
+- The release zip and APK in the builds folder are the older ones (05:14 / 05:18): they do not yet have items
+  3 and 4 above or the candleless backdrop. Rebuild when you want them.
+- The APK is signed with the debug key and flagged debuggable (needs your release keystore, -Distribution).
+- Greek: event texts and riddles are English only.
+- Event dates for next year; whether candle progress resets yearly.
+- Not seen: a real phone in portrait; a touch on a riddle answer in a live run on a device; high-graphics
+  hiding of the wall candles on PC.
+- Not committed on purpose: the demo music (MUS_Demo, licence), Build/, Demo/, .vsconfig, the campaign editor zip.
