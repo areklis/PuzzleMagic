@@ -16,11 +16,11 @@ namespace
 	constexpr float ClusterOfBoard = 0.085f;
 	constexpr float SpacingOfBoard = 0.13f;
 	constexpr float BehindBoard = 0.07f;
-	constexpr float PopTime = 0.5f;
+	constexpr float CandlePopTime = 0.5f;
 	// A cluster of three candles is about this wide at scale 1.
 	constexpr float ClusterWidth = 110.f;
 
-	float EaseOutBack(float T)
+	float CandleEaseOutBack(float T)
 	{
 		const float C1 = 1.70158f;
 		const float C3 = C1 + 1.f;
@@ -75,7 +75,7 @@ void AEventCandles::Refit()
 
 void AEventCandles::ApplyScale(FGroup& Group) const
 {
-	const float Pop = Group.PopAge >= 1.f ? 1.f : FMath::Max(EaseOutBack(Group.PopAge), 0.001f);
+	const float Pop = Group.PopAge >= 1.f ? 1.f : FMath::Max(CandleEaseOutBack(Group.PopAge), 0.001f);
 	Group.Anchor->SetWorldScale3D(FVector(BaseScale * Pop));
 }
 
@@ -86,7 +86,7 @@ void AEventCandles::Tick(float DeltaTime)
 	{
 		if (Group.bLit && Group.PopAge < 1.f)
 		{
-			Group.PopAge = FMath::Min(Group.PopAge + DeltaTime / PopTime, 1.f);
+			Group.PopAge = FMath::Min(Group.PopAge + DeltaTime / CandlePopTime, 1.f);
 			ApplyScale(Group);
 		}
 	}

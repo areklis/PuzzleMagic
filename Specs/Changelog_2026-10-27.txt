@@ -93,10 +93,10 @@ Written for the designer's review. "Checked" says where each item was seen worki
 =======================================================================
 9. NOT DONE / OPEN
 =======================================================================
+- Arcade to be added to a later patch. maybe to be made a PR event.
 - The release zip and APK in the builds folder are the older ones (05:14 / 05:18): they do not yet have items
   3 and 4 above or the candleless backdrop. Rebuild when you want them.
 - The APK is signed with the debug key and flagged debuggable (needs your release keystore, -Distribution).
-- Greek: event texts and riddles are English only.
 - Event dates for next year; whether candle progress resets yearly.
 - Not seen: a real phone in portrait; a touch on a riddle answer in a live run on a device; high-graphics
   hiding of the wall candles on PC.
