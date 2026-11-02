@@ -91,6 +91,9 @@ public:
 	// Holy Light aiming: a rune circle over the 3x3 area around a cell.
 	void ShowAreaTarget(int32 CenterX, int32 CenterY);
 	void HideAreaTarget();
+	// A small faint halo under the tray piece that is in the hand (PC click-to-pick-up).
+	void ShowHeldHalo(int32 SlotIndex);
+	void HideHeldHalo();
 
 	// Clears every completed route and closed circuit from the board state immediately; the visual
 	// pop starts after ClearDelay (so it can wait for a piece still flying in).
@@ -192,6 +195,8 @@ private:
 
 	UPROPERTY(VisibleAnywhere, Category = "Puzzle")
 	TObjectPtr<UStaticMeshComponent> TargetAura;
+	UPROPERTY()
+	TObjectPtr<UStaticMeshComponent> HeldHalo;
 
 	// Ghost preview cache so a drag only respawns ghosts when the target actually changes.
 	FIntVector GhostKey = FIntVector(MAX_int32);

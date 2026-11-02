@@ -76,6 +76,12 @@ AGridManager::AGridManager()
 	TargetAura->SetCastShadow(false);
 	TargetAura->SetVisibility(false);
 
+	HeldHalo = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HeldHalo"));
+	HeldHalo->SetupAttachment(RootComponent);
+	HeldHalo->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	HeldHalo->SetCastShadow(false);
+	HeldHalo->SetVisibility(false);
+
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> PlaneFinder(TEXT("/Engine/BasicShapes/Plane.Plane"));
 	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MarbleFinder(TEXT("/Game/Materials/M_Marble.M_Marble"));
 	static ConstructorHelpers::FObjectFinder<UMaterialInterface> BezelFinder(TEXT("/Game/Materials/M_Bezel.M_Bezel"));
@@ -86,6 +92,7 @@ AGridManager::AGridManager()
 	if (PlaneFinder.Succeeded())
 	{
 		TargetAura->SetStaticMesh(PlaneFinder.Object);
+		HeldHalo->SetStaticMesh(PlaneFinder.Object);
 	}
 }
 
@@ -98,7 +105,11 @@ void AGridManager::BeginPlay()
 		UMaterialInstanceDynamic* TargetMID = UMaterialInstanceDynamic::Create(AuraMaterial, this);
 		TargetMID->SetVectorParameterValue(TEXT("Color"), FLinearColor(1.f, 0.92f, 0.65f));
 		TargetMID->SetScalarParameterValue(TEXT("Intensity"), 5.f);
-		TargetAura->SetMaterial(0, TargetMID);
+			TargetAura->SetMaterial(0, TargetMID);
+		UMaterialInstanceDynamic* HaloMID = UMaterialInstanceDynamic::Create(AuraMaterial, this);
+		HaloMID->SetVectorParameterValue(TEXT("Color"), FLinearColor(1.f, 0.92f, 0.65f));
+		HaloMID->SetScalarParameterValue(TEXT("Intensity"), 1.2f); // faint
+		HeldHalo->SetMaterial(0, HaloMID);
 	}
 }
 
@@ -116,6 +127,20 @@ void AGridManager::ShowAreaTarget(int32 CenterX, int32 CenterY)
 void AGridManager::HideAreaTarget()
 {
 	TargetAura->SetVisibility(false);
+}
+
+void AGridManager::ShowHeldHalo(int32 SlotIndex)
+{
+	const float Size = 2.f * BoardLayout::TrayPanelHalf * 0.9f;
+	// Just above the tray panel, under the piece.
+	HeldHalo->SetWorldLocation(GetTrayAnchorWorldLocation(SlotIndex) + FVector(0.f, 0.f, 1.f));
+	HeldHalo->SetWorldScale3D(FVector(Size / 100.f, Size / 100.f, 1.f));
+	HeldHalo->SetVisibility(true);
+}
+
+void AGridManager::HideHeldHalo()
+{
+	HeldHalo->SetVisibility(false);
 }
 
 void AGridManager::Tick(float DeltaTime)

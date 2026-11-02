@@ -403,6 +403,18 @@ void APuzzleGameMode::PuzzleUiCard(const FString& What, int32 A, int32 B, int32 
 		FTimerHandle Handle;
 		GetWorldTimerManager().SetTimer(Handle, FTimerDelegate::CreateWeakLambda(this, [this, A]() { DevAnswerTreats(A); }), 8.f, false);
 	}
+	else if (What == TEXT("clicktest"))
+	{
+		// dev, 8 s later: the click-to-pick-up control driven by itself: picks up tray piece A, shows its preview over board cell (B/10, B%10) and drops it
+		FTimerHandle Handle;
+		GetWorldTimerManager().SetTimer(Handle, FTimerDelegate::CreateWeakLambda(this, [this, A, B]()
+		{
+#if !UE_BUILD_SHIPPING
+			if (InputHandler) { InputHandler->DevMouseTest(A, B / 10, B % 10); }
+#endif
+		}), 8.f, false);
+	}
+	else if (What == TEXT("combo") && PuzzleManager) { PuzzleManager->ComboStreak = A; PuzzleManager->ComboWindow = FMath::Clamp(B, 0, UPuzzleManager::ComboWindowMoves); } // dev: set the combo meter
 	else if (What == TEXT("eventstart")) { StartEventFromMenu(); } // what the menu's TRICK OR TREAT button does
 	else if (What == TEXT("demowin"))   { if (PuzzleDemo::IsDemo() && PuzzleManager) { PuzzleManager->Score = PuzzleDemo::ScoreCap(); CheckDemoCap(); } } // test: reach the demo cap
 	else if (What == TEXT("gameover"))  { UI->ShowCard(EPuzzleCard::GameOver); }

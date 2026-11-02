@@ -346,11 +346,16 @@ void UPuzzleHUDWidget::BuildHUD()
 		PipSlot->SetPadding(FMargin(Pip == 0 ? 10.f : 2.f, 0.f, 0.f, 0.f));
 		ComboPips.Add(PipImage);
 	}
-	if (UOverlaySlot* RowSlot = Combo->AddChildToOverlay(ComboRow))
+	// The text and the stars shrink to stay inside the frame (a long combo number widens the text).
+	UScaleBox* ComboFit = WidgetTree->ConstructWidget<UScaleBox>();
+	ComboFit->SetStretch(EStretch::ScaleToFit);
+	ComboFit->SetStretchDirection(EStretchDirection::DownOnly);
+	ComboFit->AddChild(ComboRow);
+	if (UOverlaySlot* RowSlot = Combo->AddChildToOverlay(ComboFit))
 	{
-		RowSlot->SetHorizontalAlignment(HAlign_Center);
-		RowSlot->SetVerticalAlignment(VAlign_Center);
-		RowSlot->SetPadding(FMargin(0.f, 0.f, 0.f, 6.f));
+		RowSlot->SetHorizontalAlignment(HAlign_Fill);
+		RowSlot->SetVerticalAlignment(VAlign_Fill);
+		RowSlot->SetPadding(FMargin(24.f, 12.f, 24.f, 18.f));
 	}
 	ComboBadge = Combo;
 	Combo->SetRenderTransformPivot(FVector2D(0.5f, 0.5f));
@@ -1914,7 +1919,24 @@ void UPuzzleHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime
 	}
 	else if (GameMode->Flow == EPuzzleFlow::Playing)
 	{
+#if PLATFORM_ANDROID || PLATFORM_IOS
 		Hint = (GameMode->InputHandler && GameMode->InputHandler->IsHoveringReserve()) ? TEXT("Drop to hold it for later") : TEXT("Drag a piece onto the board");
+#else
+		// PC mouse: a click picks a piece up, the next click puts it down.
+		const bool bHolding = GameMode->InputHandler && GameMode->InputHandler->IsMouseHolding();
+		if (GameMode->InputHandler && GameMode->InputHandler->IsHoveringReserve())
+		{
+			Hint = TEXT("Click to hold it for later");
+		}
+		else if (bHolding)
+		{
+			Hint = TEXT("Click to put it down\nEsc puts it back");
+		}
+		else
+		{
+			Hint = TEXT("Click a piece, then click where it goes");
+		}
+#endif
 	}
 	HintText->SetText(FText::FromString(Hint));
 	HintText->SetColorAndOpacity(FSlateColor(HintColor));

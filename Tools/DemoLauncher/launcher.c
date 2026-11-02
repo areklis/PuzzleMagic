@@ -20,8 +20,15 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrev, PWSTR cmdLine, int sho
 	swprintf(binDir, MAX_PATH * 2, L"%ls\\WyrdHandsBlockPuzzle\\Binaries\\Win64", self);
 	swprintf(inner, MAX_PATH * 2, L"%ls\\WyrdHandsBlockPuzzle-Win64-Shipping.exe", binDir);
 
+	// A first launch (no settings saved yet) opens in a window from the very first frame. The engine creates its window before the
+	// game's own code runs, and without this it is a full-screen window for the seconds of the first load (a black screen).
+	// Once the player has picked a mode it is saved and the engine uses that one.
+	wchar_t settings[MAX_PATH * 2];
+	swprintf(settings, MAX_PATH * 2, L"%ls\\WyrdHandsBlockPuzzle\\Saved\\Config\\Windows\\GameUserSettings.ini", self);
+	const BOOL firstRun = GetFileAttributesW(settings) == INVALID_FILE_ATTRIBUTES;
+
 	wchar_t line[8192];
-	swprintf(line, 8192, L"\"%ls\" -NotInstalled %ls", inner, cmdLine ? cmdLine : L"");
+	swprintf(line, 8192, L"\"%ls\" -NotInstalled%ls %ls", inner, firstRun ? L" -windowed -ResX=1536 -ResY=864" : L"", cmdLine ? cmdLine : L"");
 
 	STARTUPINFOW si;
 	PROCESS_INFORMATION pi;

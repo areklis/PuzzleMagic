@@ -80,6 +80,14 @@ theme. Theme option in Play options: AUTO (the event's theme during an event, De
 (with `-demo` the bot plays it). The wall candles are taken away for the run (`AGothicEnvironment::SetWallCandlesHidden`; in the lightweight scene the picture
 `T_LiteBackdropEvent` is used, made with `-demo -grid=8x8 -backdropcapture -classic -nowallcandles` and imported by `Tools/build_lite_assets.py`). Dev: `PuzzleUiCard riddle|eventfill A B|eventcandles A|eventend A|eventstart`.
 
+## First launch window
+A packaged Windows game opens windowed on a first run. The engine creates its window (fullscreen by default) before the game's code runs, so the code
+alone (`APuzzleGameMode::StartPlay`) left a full-screen black window for the seconds of the first load, and a `Config/DefaultGameUserSettings.ini` did
+not change that. The fix is in the launcher (`Tools/DemoLauncher/launcher.c`): with no `Saved/Config/Windows/GameUserSettings.ini` yet it starts the
+game with `-windowed -ResX=1536 -ResY=864`. Check a first run by sampling the window every second from the start, not once. Anyone starting the inner
+`*-Win64-Shipping.exe` directly skips the launcher: no `-NotInstalled` (saves go to AppData) and no windowed first run.
+Android and iOS start in portrait on a fresh install (`PUZZLE_PORTRAIT_DEFAULT` in `PuzzleSaveGame.h`); the Play options button still toggles it.
+
 ## Workflows (project skills in `.claude/skills/`, usable in any Claude Code session here)
 - `build-test-packages`: compile and build the Windows zip and the Android APK (`Tools/build_packages.ps1`, `Tools/package_windows.py`).
 - `device-test`: UI sweep, soak, frame rate and power tests on real phones/tablets (`Tools/AndroidTests/`, paths and devices are

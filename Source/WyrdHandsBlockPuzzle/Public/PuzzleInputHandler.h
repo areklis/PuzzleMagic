@@ -34,6 +34,15 @@ public:
 	// True while a dragged piece hovers over the hold slot.
 	bool IsHoveringReserve() const { return bOverReserve; }
 
+	// PC mouse: a click picks a piece up, the next click puts it down (touch still drags). True while a piece is in the hand.
+	bool IsMouseHolding() const { return bDragging && bMouseHolding; }
+
+#if !UE_BUILD_SHIPPING
+	// Dev (PuzzleUiCard clicktest): drives the mouse by itself, so a click-to-pick-up test needs no real mouse. Picks up tray piece Slot,
+	// moves over board cell (CellX, CellY) and drops it there a few seconds later.
+	void DevMouseTest(int32 Slot, int32 CellX, int32 CellY);
+#endif
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
@@ -62,6 +71,18 @@ protected:
 	bool bDragging = false;
 	int32 DraggedSlot = -1;
 	bool bOverReserve = false;
+
+	// PC mouse: the piece was picked up by a click and stays in the hand until the next click (or Esc / right click to put it back).
+	bool bMouseHolding = false;
+	// The second click: drops the held piece where the cursor is, or does nothing (the piece stays in the hand, its preview red)
+	// when it cannot go there. A click on the piece's own tray slot puts it back; on the hold slot it parks it there.
+	void DropHeldPiece(FVector2D ScreenPosition);
+	bool GetMouseScreenPosition(FVector2D& OutPosition) const;
+#if !UE_BUILD_SHIPPING
+	bool bDevMouse = false;
+	bool bDevInjecting = false; // true only while the test itself clicks: real clicks are ignored during a test
+	FVector2D DevMousePosition = FVector2D::ZeroVector;
+#endif
 
 	bool bHolyTargeting = false;
 	bool ScreenPositionToCell(FVector2D ScreenPosition, int32& OutX, int32& OutY) const;

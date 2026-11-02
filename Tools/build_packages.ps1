@@ -1,15 +1,21 @@
 <#
-Builds the test packages: compiles the editor target, cooks and packages Windows and/or Android, and makes the Windows zip.
+Builds the packages: compiles the editor target, cooks and packages the Windows zips and the Android APKs. Each switch builds only
+what it names:
 
-  powershell -File Tools\build_packages.ps1 [-Win] [-Android] [-Demo] [-Ue "C:\Epic Games\UE_5.8"] [-Out "D:\PuzzleMagic_Builds"]
+  powershell -File Tools\build_packages.ps1 [-Release] [-ReleaseApk] [-Demo] [-DemoApk] [-Android] [-Distribution] [-Ue "C:\Epic Games\UE_5.8"] [-Out "D:\Builds"]
 
--Demo also makes WyrdHandsBlockPuzzle_Demo_Windows.zip, from a separate Shipping build (no firewall prompt); a DemoBuild.txt marker in it
-makes the game the demo. -DemoOnly builds just that.
+With no switch: -Release and -Android (the Windows release and a Development APK for tests). -Win is the old name of -Release (it used to
+make a separate Development "portable" test package: gone, every package keeps its saves beside the game, see below).
+
+-Demo makes WyrdHandsBlockPuzzle_Demo_Windows.zip, from a separate Shipping build (no firewall prompt); a DemoBuild.txt marker in it
+makes the game the demo (-DemoOnly is the same). -DemoApk makes WyrdHandsBlockPuzzle_Demo_Android.apk.
+-Android makes WyrdHandsBlockPuzzle_Android_test.apk: a Development APK with the test commands (not for players).
 -Release makes WyrdHandsBlockPuzzle_Windows.zip: the full game (no demo switches) as a Shipping build with the branded launcher that keeps saves
 in the game folder. -ReleaseApk makes WyrdHandsBlockPuzzle_Android.apk: the full game, Shipping. -Distribution adds the engine's -distribution flag to
-the release APK (not debuggable); it needs the release keystore set in Project Settings > Android. Either one alone builds just that.
+the release APK (not debuggable); it needs the release keystore set in Project Settings > Android. 
 
-With neither -Win nor -Android, both are built. Defaults: the engine named by the .uproject's EngineAssociation (looked up in the
+Every Windows zip starts the game through the branded launcher with -NotInstalled, so saves and settings stay in the game's folder, never
+in AppData. Defaults: the engine named by the .uproject's EngineAssociation (looked up in the
 registry, then under the usual folders) and the folder PuzzleMagic_Builds next to the repo. Android needs the Android SDK (adb and
 the NDK 27.2.12479018) and JDK 21 (found under Program Files, or pass -Jdk); set ANDROID_HOME if the SDK is not in its usual place.
 Close the editor and any running game first, and never run two builds at once. The cook sometimes dies at teardown with an engine
@@ -24,11 +30,9 @@ param(
 $ErrorActionPreference = "Stop"
 $repo = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $uproject = Join-Path $repo "WyrdHandsBlockPuzzle.uproject"
-if ($DemoOnly) { $Demo = $true; $Win = $false; $Android = $false }
-$releaseOnly = ($Release -or $ReleaseApk) -and -not ($Win -or $Android -or $Demo -or $DemoApk -or $DemoOnly)
-if ($releaseOnly) { $Win = $false; $Android = $false }
-if ($DemoApk -and -not ($Win -or $Android -or $Demo)) { $Win = $false; $Android = $false } # -DemoApk alone builds just the demo APK
-elseif (-not ($Win -or $Android -or $DemoOnly -or $releaseOnly)) { $Win = $true; $Android = $true }
+if ($Win) { $Release = $true }      # -Win is the old name of -Release
+if ($DemoOnly) { $Demo = $true }
+if (-not ($Release -or $ReleaseApk -or $Android -or $Demo -or $DemoApk)) { $Release = $true; $Android = $true }   # no switch: the default set
 if (-not $Out) { $Out = Join-Path (Split-Path -Parent $repo) "PuzzleMagic_Builds" }
 New-Item -ItemType Directory -Force $Out | Out-Null
 
@@ -48,7 +52,7 @@ if (-not $Ue -or -not (Test-Path (Join-Path $Ue "Engine\Build\BatchFiles\RunUAT.
 $uat = Join-Path $Ue "Engine\Build\BatchFiles\RunUAT.bat"
 $buildBat = Join-Path $Ue "Engine\Build\BatchFiles\Build.bat"
 Write-Host "engine: $Ue  output: $Out"
-if ($DryRun) { Write-Host "dry run: would build win=$Win android=$Android compile=$(-not $SkipCompile)"; return }
+if ($DryRun) { Write-Host "dry run: would build release=$Release releaseApk=$ReleaseApk demo=$Demo demoApk=$DemoApk androidDev=$Android compile=$(-not $SkipCompile)"; return }
 
 function Stop-Leftovers { Get-Process UnrealEditor, UnrealEditor-Cmd, dotnet -ErrorAction SilentlyContinue | Stop-Process -Force; Start-Sleep 3 }
 # Every package starts from an empty output folder: files left by an older build (the old name's folder, an older APK) would otherwise
@@ -75,13 +79,6 @@ if (-not $SkipCompile) {
 }
 
 $common = @("BuildCookRun", "-project=$uproject", "-noP4", "-clientconfig=Development", "-build", "-cook", "-stage", "-pak", "-archive", "-utf8output", "-unattended", "-nocompileeditor")
-
-if ($Win) {
-  $dir = Join-Path $Out "WindowsPortable"
-  Clear-OutputDir $dir
-  Run-Uat ($common + @("-platform=Win64", "-archivedirectory=$dir")) (Join-Path $Out "win_portable_build.log")
-  python (Join-Path $repo "Tools\package_windows.py") $dir (Join-Path $Out "WyrdHandsBlockPuzzle_Windows_Portable.zip")
-}
 
 # The demo is a Shipping build: Development builds open a profiler port (TraceLog, TCP 1985) that makes Windows Firewall ask the player
 # to allow the game. Shipping compiles it out. (No console, no log file: use the Development package to test with commands.)

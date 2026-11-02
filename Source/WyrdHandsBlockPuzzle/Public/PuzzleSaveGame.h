@@ -4,6 +4,14 @@
 #include "GameFramework/SaveGame.h"
 #include "PuzzleSaveGame.generated.h"
 
+// A phone or tablet starts in portrait on a fresh install (the Play options button still switches to landscape and the choice is saved);
+// a PC has no orientation.
+#if PLATFORM_ANDROID || PLATFORM_IOS
+#define PUZZLE_PORTRAIT_DEFAULT true
+#else
+#define PUZZLE_PORTRAIT_DEFAULT false
+#endif
+
 UCLASS()
 class WYRDHANDSBLOCKPUZZLE_API UPuzzleSaveGame : public USaveGame
 {
@@ -69,9 +77,9 @@ public:
 	UPROPERTY()
 	uint8 Theme = 0;
 
-	// Phones and tablets: hold the screen upright (portrait) instead of sideways (landscape, the default).
+	// Phones and tablets: hold the screen upright (portrait, the default on a fresh install) or sideways (landscape).
 	UPROPERTY()
-	bool bPortrait = false;
+	bool bPortrait = PUZZLE_PORTRAIT_DEFAULT;
 
 	// Arcade and tutorial: how many steps of the campaign are beaten in a row.
 	UPROPERTY()

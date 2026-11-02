@@ -65,19 +65,16 @@ void APuzzleInputHandler::Tick(float DeltaTime)
 	// Touch drags are driven by the touch-repeat event; only mouse drags (and mouse aiming of Holy Light) need polling.
 	if (!bTouchDrag && (bDragging || bHolyTargeting))
 	{
-		if (APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0))
+		FVector2D MousePosition;
+		if (GetMouseScreenPosition(MousePosition))
 		{
-			float MouseX = 0.f, MouseY = 0.f;
-			if (PC->GetMousePosition(MouseX, MouseY))
+			if (bDragging)
 			{
-				if (bDragging)
-				{
-					HandleMoved(FVector2D(MouseX, MouseY));
-				}
-				else
-				{
-					ShowHolyGhost(FVector2D(MouseX, MouseY));
-				}
+				HandleMoved(MousePosition);
+			}
+			else
+			{
+				ShowHolyGhost(MousePosition);
 			}
 		}
 	}
@@ -91,8 +88,28 @@ bool APuzzleInputHandler::IsInputAllowed() const
 	return GameMode && GameMode->IsBoardInputEnabled() && GridManager && PuzzleManager && !PuzzleManager->IsFinished();
 }
 
+bool APuzzleInputHandler::GetMouseScreenPosition(FVector2D& OutPosition) const
+{
+#if !UE_BUILD_SHIPPING
+	if (bDevMouse)
+	{
+		OutPosition = DevMousePosition;
+		return true;
+	}
+#endif
+	APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0);
+	float MouseX = 0.f, MouseY = 0.f;
+	if (PC && PC->GetMousePosition(MouseX, MouseY))
+	{
+		OutPosition = FVector2D(MouseX, MouseY);
+		return true;
+	}
+	return false;
+}
+
 void APuzzleInputHandler::CancelInteraction()
 {
+	bMouseHolding = false;
 	bDragging = false;
 	DraggedSlot = -1;
 	bOverReserve = false;
@@ -101,6 +118,7 @@ void APuzzleInputHandler::CancelInteraction()
 	{
 		GridManager->HideGhostPreview();
 		GridManager->HideAreaTarget();
+		GridManager->HideHeldHalo();
 	}
 }
 
@@ -120,17 +138,148 @@ void APuzzleInputHandler::OnCancelPressed()
 
 void APuzzleInputHandler::OnMousePressed()
 {
-	if (APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0))
+#if !UE_BUILD_SHIPPING
+	if (bDevMouse && !bDevInjecting)
 	{
-		float MouseX = 0.f, MouseY = 0.f;
-		PC->GetMousePosition(MouseX, MouseY);
-		bTouchDrag = false;
-		HandlePressed(FVector2D(MouseX, MouseY));
+		return; // a click test is running: only its own clicks count
+	}
+#endif
+	FVector2D MousePosition;
+	if (!GetMouseScreenPosition(MousePosition))
+	{
+		return;
+	}
+	bTouchDrag = false;
+	// A piece is in the hand: this click puts it down.
+	if (bDragging && bMouseHolding)
+	{
+		DropHeldPiece(MousePosition);
+		return;
+	}
+	HandlePressed(MousePosition);
+	if (bDragging)
+	{
+		if (bHolyTargeting)
+		{
+			HandleReleased(MousePosition); // Holy Light is already aimed at the cursor: this click fires it
+		}
+		else
+		{
+			bMouseHolding = true; // a piece was picked up: it stays in the hand until the next click
+			GridManager->ShowHeldHalo(DraggedSlot);
+		}
 	}
 }
 
+void APuzzleInputHandler::DropHeldPiece(FVector2D ScreenPosition)
+{
+	if (!IsInputAllowed() || !GridManager || !PuzzleManager || !GridManager->Tray.IsValidIndex(DraggedSlot))
+	{
+		CancelInteraction();
+		return;
+	}
+	const int32 Slot = DraggedSlot;
+	HandleMoved(ScreenPosition); // brings bOverReserve up to date for this click
+	const int32 ClickedSlot = FindTraySlotUnderScreenPosition(ScreenPosition);
+	if (ClickedSlot == Slot)
+	{
+		CancelInteraction(); // a click on its own slot puts it back
+		return;
+	}
+	if (ClickedSlot >= 0 && GridManager->TraySlotUsed.IsValidIndex(ClickedSlot) && !GridManager->TraySlotUsed[ClickedSlot])
+	{
+		// Another piece (one of the three or the one on hold): the hand switches to it. Nothing moves between the slots.
+		DraggedSlot = ClickedSlot;
+		GridManager->HideGhostPreview();
+		GridManager->ShowHeldHalo(ClickedSlot);
+		HandleMoved(ScreenPosition);
+		return;
+	}
+	if (bOverReserve)
+	{
+		CancelInteraction();
+		PuzzleManager->ParkPiece(Slot);
+		return;
+	}
+	const FPuzzlePieceShape Shape = GridManager->Tray[Slot];
+	int32 OriginX = 0, OriginY = 0;
+	if (ScreenPositionToBoardOrigin(ScreenPosition, Shape, OriginX, OriginY) && GridManager->CanPlacePieceAt(Shape, OriginX, OriginY))
+	{
+		CancelInteraction();
+		PuzzleManager->TryPlacePiece(Slot, OriginX, OriginY);
+	}
+	// otherwise the piece stays in the hand
+}
+
+#if !UE_BUILD_SHIPPING
+void APuzzleInputHandler::DevMouseTest(int32 Slot, int32 CellX, int32 CellY)
+{
+	// Slot >= 10: two digits, pick up the first slot, then switch to the second one by clicking it before the drop
+	const int32 SwitchTo = Slot >= 10 ? Slot % 10 : -1;
+	if (Slot >= 10) { Slot /= 10; }
+	APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0);
+	if (!PC || !GridManager)
+	{
+		return;
+	}
+	auto After = [this](float Delay, TFunction<void()> Step)
+	{
+		FTimerHandle Handle;
+		GetWorldTimerManager().SetTimer(Handle, FTimerDelegate::CreateWeakLambda(this, MoveTemp(Step)), Delay, false);
+	};
+	FVector2D TrayScreen, CellScreen;
+	if (!PC->ProjectWorldLocationToScreen(GridManager->GetTrayAnchorWorldLocation(Slot), TrayScreen)
+		|| !PC->ProjectWorldLocationToScreen(GridManager->GetWorldLocationForCell(CellX, CellY), CellScreen))
+	{
+		return;
+	}
+	bDevMouse = true;
+	DevMousePosition = TrayScreen;
+	UE_LOG(LogTemp, Display, TEXT("ClickTest: start, tray slot %d, board cell (%d,%d), score %d"), Slot, CellX, CellY, PuzzleManager ? PuzzleManager->Score : -1);
+	After(0.5f, [this, Slot]()
+	{
+		bDevInjecting = true; OnMousePressed(); bDevInjecting = false;                         // 1st click: pick up
+		UE_LOG(LogTemp, Display, TEXT("ClickTest: 1st click -> holding=%d, piece in tray slot %d still there=%d"), IsMouseHolding(), Slot, GridManager && GridManager->TraySlotUsed.IsValidIndex(Slot) ? !GridManager->TraySlotUsed[Slot] : -1);
+	});
+	After(1.0f, [this]() { bDevInjecting = true; OnMouseReleased(); bDevInjecting = false; UE_LOG(LogTemp, Display, TEXT("ClickTest: button released -> holding=%d (must still be 1)"), IsMouseHolding()); });
+	After(1.5f, [this, CellScreen, CellX, CellY]() { DevMousePosition = CellScreen; UE_LOG(LogTemp, Display, TEXT("ClickTest: cursor over board cell (%d,%d)"), CellX, CellY); });
+	if (SwitchTo >= 0)
+	{
+		FVector2D OtherScreen;
+		if (PC->ProjectWorldLocationToScreen(GridManager->GetTrayAnchorWorldLocation(SwitchTo), OtherScreen))
+		{
+			After(12.0f, [this, OtherScreen, SwitchTo]()
+			{
+				DevMousePosition = OtherScreen;
+				bDevInjecting = true; OnMousePressed(); bDevInjecting = false;
+				UE_LOG(LogTemp, Display, TEXT("ClickTest: clicked tray slot %d -> holding=%d, held slot=%d"), SwitchTo, IsMouseHolding(), DraggedSlot);
+			});
+			After(13.0f, [this, CellScreen]() { DevMousePosition = CellScreen; });
+		}
+	}
+	After(24.0f, [this, Slot]()
+	{
+		const int32 ScoreBefore = PuzzleManager ? PuzzleManager->Score : -1;
+		bDevInjecting = true; OnMousePressed(); bDevInjecting = false;                         // 2nd click: put it down
+		UE_LOG(LogTemp, Display, TEXT("ClickTest: 2nd click -> holding=%d, piece left the tray=%d, score %d -> %d"), IsMouseHolding(), GridManager && GridManager->TraySlotUsed.IsValidIndex(Slot) ? GridManager->TraySlotUsed[Slot] : -1, ScoreBefore, PuzzleManager ? PuzzleManager->Score : -1);
+	});
+	After(25.0f, [this]() { bDevInjecting = true; OnMouseReleased(); bDevInjecting = false; bDevMouse = false; UE_LOG(LogTemp, Display, TEXT("ClickTest: finished")); });
+}
+#endif
+
 void APuzzleInputHandler::OnMouseReleased()
 {
+#if !UE_BUILD_SHIPPING
+	if (bDevMouse && !bDevInjecting)
+	{
+		return;
+	}
+#endif
+	// PC mouse: a piece is picked up and put down by clicks, so letting go of the button does nothing.
+	if (bMouseHolding)
+	{
+		return;
+	}
 	if (APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0))
 	{
 		float MouseX = 0.f, MouseY = 0.f;

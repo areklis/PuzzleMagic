@@ -73,12 +73,14 @@ bool UPuzzleManager::TryPlacePiece(int32 TraySlot, int32 OriginX, int32 OriginY)
 	int32 RoundScore = 0;
 	LastBonusMoves = 0;
 	RoutesCleared += Result.Lines;
+	// Each bonus tile a chain clears is one more combo step.
+	const int32 BonusSteps = bComboEnabled ? Result.Bonuses.Num() : 0;
 	if (Result.Lines > 0)
 	{
 		// Multi-line clears push the combo up faster; any clear refills the window.
 		if (bComboEnabled)
 		{
-			ComboStreak += Result.Lines;
+			ComboStreak += Result.Lines + BonusSteps;
 			ComboWindow = ComboWindowMoves;
 		}
 
@@ -97,13 +99,26 @@ bool UPuzzleManager::TryPlacePiece(int32 TraySlot, int32 OriginX, int32 OriginY)
 			GrantRelics();
 		}
 	}
+	else if (BonusSteps > 0)
+	{
+		ComboStreak += BonusSteps;
+		ComboWindow = ComboWindowMoves;
+	}
 	else if (bComboEnabled && ComboStreak > 0 && --ComboWindow <= 0)
 	{
+		// The window ran out: the combo drops one step (and gets a fresh window) instead of vanishing at once.
 		const int32 Lost = ComboStreak;
-		ComboStreak = 0;
-		ComboWindow = 0;
-		NextRelicCombo = RelicComboStep;
-		OnComboBroken.Broadcast(Lost);
+		--ComboStreak;
+		if (ComboStreak > 0)
+		{
+			ComboWindow = ComboWindowMoves;
+		}
+		else
+		{
+			ComboWindow = 0;
+			NextRelicCombo = RelicComboStep;
+			OnComboBroken.Broadcast(Lost);
+		}
 	}
 
 	// A trick (closed circuit) sours the combo: each one costs a step.
