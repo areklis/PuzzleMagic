@@ -12,7 +12,7 @@ import os
 import bpy
 import bmesh
 
-OUT = r"D:\Unreal Projects\PuzzleGame5x5\RawMeshes"
+OUT = r"D:\Unreal Projects\WyrdHandsBlockPuzzle\RawMeshes"
 os.makedirs(OUT, exist_ok=True)
 HEIGHT = 16.0
 

@@ -14,12 +14,12 @@ from PIL import Image
 
 ADB = os.path.join(os.environ["LOCALAPPDATA"], "Android", "Sdk", "platform-tools", "adb.exe")
 PHONE = os.environ.get("PM_DEVICE") or ""   # the adb serial; default: the only connected device
-PKG = "com.YourCompany.PuzzleMagic"
+PKG = "com.oakwyrdtales.wyrdhands"
 ACT = PKG + "/com.epicgames.unreal.GameActivity"
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
 BUILDS = os.environ.get("PM_BUILDS", os.path.join(os.path.dirname(REPO), "PuzzleMagic_Builds"))
-APK = os.environ.get("PM_APK", os.path.join(BUILDS, "PuzzleMagic_Android_test.apk"))
+APK = os.environ.get("PM_APK", os.path.join(BUILDS, "WyrdHandsBlockPuzzle_Android_test.apk"))
 OUTBASE = os.environ.get("PM_OUT", os.path.join(BUILDS, "AndroidTests"))
 os.makedirs(OUTBASE, exist_ok=True)
 if not PHONE:
@@ -65,7 +65,7 @@ def battery():
 
 def fps():
     raw = sh("shell", "dumpsys", "SurfaceFlinger", "--list")
-    for name in dict.fromkeys(re.findall(r"SurfaceView\[com\.YourCompany\.PuzzleMagic/com\.epicgames\.unreal\.GameActivity\][^\s}]*", raw)):
+    for name in dict.fromkeys(re.findall(r"SurfaceView\[com\.oakwyrdtales\.wyrdhands/com\.epicgames\.unreal\.GameActivity\][^\s}]*", raw)):
         out = sh("shell", "dumpsys", "SurfaceFlinger", "--latency", '"%s"' % name)
         ts = [int(l.split()[1]) for l in out.splitlines()[1:] if len(l.split()) == 3 and l.split()[1].isdigit() and 0 < int(l.split()[1]) < 9e18]
         if len(ts) >= 30:

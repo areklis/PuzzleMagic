@@ -1,7 +1,7 @@
 import unreal
 
 eal = unreal.EditorAssetLibrary
-raw_dir = r"D:\Unreal Projects\PuzzleGame5x5\RawAudio"
+raw_dir = r"D:\Unreal Projects\WyrdHandsBlockPuzzle\RawAudio"
 dest = "/Game/Audio"
 import sys
 

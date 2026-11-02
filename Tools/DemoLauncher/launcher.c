@@ -1,0 +1,46 @@
+/* The demo's WyrdHandsBlockPuzzle.exe: starts the Shipping game next to it with -NotInstalled and any arguments it was given.
+ *
+ * A Shipping Unreal game saves its settings and progress to AppData unless it runs with -NotInstalled, and the engine's own launcher
+ * exe cannot carry that argument on Windows. This one can, so double-clicking the exe keeps every file in the game's folder.
+ * Built by build_launcher.ps1 and swapped into the demo zip by Tools/package_windows.py --demo.
+ */
+#include <windows.h>
+#include <stdio.h>
+#include <wchar.h>
+
+int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrev, PWSTR cmdLine, int show)
+{
+	wchar_t self[MAX_PATH];
+	if (!GetModuleFileNameW(NULL, self, MAX_PATH)) { return 1; }
+	wchar_t* slash = wcsrchr(self, L'\\');
+	if (slash) { *slash = 0; }
+
+	wchar_t binDir[MAX_PATH * 2];
+	wchar_t inner[MAX_PATH * 2];
+	swprintf(binDir, MAX_PATH * 2, L"%ls\\WyrdHandsBlockPuzzle\\Binaries\\Win64", self);
+	swprintf(inner, MAX_PATH * 2, L"%ls\\WyrdHandsBlockPuzzle-Win64-Shipping.exe", binDir);
+
+	// A first launch (no settings saved yet) opens in a window from the very first frame. The engine creates its window before the
+	// game's own code runs, and without this it is a full-screen window for the seconds of the first load (a black screen).
+	// Once the player has picked a mode it is saved and the engine uses that one.
+	wchar_t settings[MAX_PATH * 2];
+	swprintf(settings, MAX_PATH * 2, L"%ls\\WyrdHandsBlockPuzzle\\Saved\\Config\\Windows\\GameUserSettings.ini", self);
+	const BOOL firstRun = GetFileAttributesW(settings) == INVALID_FILE_ATTRIBUTES;
+
+	wchar_t line[8192];
+	swprintf(line, 8192, L"\"%ls\" -NotInstalled%ls %ls", inner, firstRun ? L" -windowed -ResX=1536 -ResY=864" : L"", cmdLine ? cmdLine : L"");
+
+	STARTUPINFOW si;
+	PROCESS_INFORMATION pi;
+	ZeroMemory(&si, sizeof(si));
+	si.cb = sizeof(si);
+	ZeroMemory(&pi, sizeof(pi));
+	if (!CreateProcessW(inner, line, NULL, NULL, FALSE, 0, NULL, binDir, &si, &pi))
+	{
+		MessageBoxW(NULL, L"Could not start the game. Please unzip the whole folder first.", L"Wyrd Hands: Block Puzzle", MB_ICONERROR);
+		return 1;
+	}
+	CloseHandle(pi.hThread);
+	CloseHandle(pi.hProcess);
+	return 0;
+}

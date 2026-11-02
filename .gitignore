@@ -35,3 +35,8 @@ dev_chat.log
 # SSH keys must never be committed
 id_ed25519*
 *.pem
+
+# signing keys never go in the repository
+*.keystore
+*.jks
+keystore.properties

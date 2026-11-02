@@ -2,7 +2,7 @@
 # Run: UnrealEditor-Cmd.exe <uproject> -run=pythonscript -script=<this file>
 import unreal
 
-exec(open(r"D:\Unreal Projects\PuzzleGame5x5\Tools\arcane_head.py", encoding="utf-8").read())
+exec(open(r"D:\Unreal Projects\WyrdHandsBlockPuzzle\Tools\arcane_head.py", encoding="utf-8").read())
 
 BOLT_HLSL = r"""struct BoltFns {
     float H(float n) { return frac(sin(n * 127.1) * 43758.5453); }
